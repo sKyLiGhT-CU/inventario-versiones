@@ -503,7 +503,7 @@ const TH=[['auto','Automático','#1d4ed8','#0b1220','#6b9bff'],['esmeralda','Esm
 const curTh=()=>{try{const t=localStorage.getItem('inv2t');return TH.some(x=>x[0]==t)?t:'auto'}catch(e){return'auto'}};
 function setTheme(id){try{localStorage.setItem('inv2t',id)}catch(e){}if(id=='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',id);const m=document.querySelector('meta[name=theme-color]'),t=TH.find(x=>x[0]==id);if(m&&t)m.setAttribute('content',t[2]);th()}
 function th(){const c=curTh();show(`<h3>Cambiar tema</h3>`+TH.map(x=>`<div class="card" style="margin:8px 0;${x[0]==c?'border-color:var(--p)':''}" onclick="setTheme('${x[0]}')"><div class="row"><b>${x[0]==c?'✓ ':''}${x[1]}</b><span style="display:flex;gap:4px"><i style="width:18px;height:18px;border-radius:50%;background:${x[2]};border:1px solid var(--b)"></i><i style="width:18px;height:18px;border-radius:50%;background:${x[3]};border:1px solid var(--b)"></i><i style="width:18px;height:18px;border-radius:50%;background:${x[4]};border:1px solid var(--b)"></i></span></div></div>`).join('')+`<button class="s" onclick="cm()">Cerrar</button>`)}
-function mn(){show(`<h3>Opciones</h3><div class="m ${old()?'no':''}">${lb()?'Último respaldo: '+fd(lb()):'Aún no has guardado un respaldo'}</div><div class="m ${LSZ>3.5e6?'no':''}">Espacio usado: ${(LSZ/1e6).toFixed(1)} MB de ~5 MB</div><button class="s" onclick="cm();syncAll(false)">🔄 Sincronizar todos los locales</button><button class="s" onclick="th()">🎨 Cambiar tema</button><button class="b" onclick="guardar()">Guardar respaldo en Drive</button><label class="s" style="display:block;text-align:center;margin:8px 0 0">Restaurar desde respaldo<input type="file" accept=".json" onchange="imp(event)" hidden></label>${hp()?'<button class="s" onclick="undo()">Deshacer última restauración</button>':''}<button class="s" onclick="cm()">Cerrar</button>`)}
+function mn(){show(`<h3>Opciones</h3><div class="m ${old()?'no':''}">${lb()?'Último respaldo: '+fd(lb()):'Aún no has guardado un respaldo'}</div><div class="m ${LSZ>3.5e6?'no':''}">Espacio usado: ${(LSZ/1e6).toFixed(1)} MB de ~5 MB</div><div class="m">${typeof licTxt==='function'?licTxt():''}</div><button class="s" onclick="cm();syncAll(false)">🔄 Sincronizar todos los locales</button><button class="s" onclick="cm();licAct()">🔑 Activar código</button><button class="s" onclick="th()">🎨 Cambiar tema</button><button class="b" onclick="guardar()">Guardar respaldo en Drive</button><label class="s" style="display:block;text-align:center;margin:8px 0 0">Restaurar desde respaldo<input type="file" accept=".json" onchange="imp(event)" hidden></label>${hp()?'<button class="s" onclick="undo()">Deshacer última restauración</button>':''}<button class="s" onclick="cm()">Cerrar</button>`)}
 const dump=()=>JSON.stringify({v:'inventario',D});
 function ex(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dump()],{type:'application/json'}));a.download='respaldo-inventario-'+td()+'.json';a.click();mkb();r();cm()}
 async function guardar(){const C=window.Capacitor,n='respaldo-inventario-'+td()+'.json';
@@ -659,7 +659,7 @@ acs();
 r();setTimeout(askCam,1200);
 </script>
 <script>(function(){
-var APP_V=60,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=61,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -687,58 +687,68 @@ window.addEventListener('online',function(){setTimeout(chk,2000)});
 })();
 </script>
 <script>(function(){
-var AV=window.APP_V_||0;
-function did(){var k='inv_did',v=null;try{v=localStorage.getItem(k)}catch(e){}
- if(!v||v.length<12){v='';try{var a=new Uint8Array(10);crypto.getRandomValues(a);a.forEach(function(b){v+=('0'+b.toString(16)).slice(-2)})}catch(e){for(var i=0;i<20;i++)v+=Math.floor(Math.random()*16).toString(16)}
-  try{localStorage.setItem(k,v)}catch(e){}}
- return v}
+var AV=window.APP_V_||0,PF='t',LAST=null,lastPing=0;
+var g=function(k){try{return localStorage.getItem(k)}catch(e){return null}};
+var s=function(k,v){try{localStorage.setItem(k,v)}catch(e){}};
+function did(){var v=g('inv_did');if(!v||v.length<12){v='';try{var a=new Uint8Array(10);crypto.getRandomValues(a);a.forEach(function(b){v+=('0'+b.toString(16)).slice(-2)})}catch(e){for(var i=0;i<20;i++)v+=Math.floor(Math.random()*16).toString(16)}s('inv_did',v)}return v}
 function cnt(){try{return D.est.reduce(function(a,e){var o=opn(e);return a+(o&&o.ps?o.ps.length:0)},0)}catch(e){return 0}}
-var pinged=false;
-function ping(){
- if(pinged||!navigator.onLine)return;pinged=true;
- try{rpc('ping_dispositivo',{p_id:did(),p_version:AV,p_locales:D.est.length,p_productos:cnt()}).catch(function(){pinged=false})}catch(e){pinged=false}
+function uso7(){try{var lim=iso(new Date(Date.now()-6*864e5)),n=0;D.est.forEach(function(e){(e.pr||[]).forEach(function(w){(w.ps||[]).forEach(function(p){(p.en||[]).forEach(function(x){if(x.f>=lim)n++})})})});return n}catch(e){return 0}}
+/* hora confiable: nunca retrocede aunque cambien la fecha del teléfono */
+function seen(ms){ms=+ms;if(ms>(+g('inv_maxt')||0))s('inv_maxt',String(ms))}
+function nowT(){return Math.max(Date.now(),+g('inv_maxt')||0)}
+function fdt(ms){return new Date(ms).toLocaleDateString('es',{day:'2-digit',month:'2-digit',year:'numeric'})}
+function lic(){try{return JSON.parse(g('inv_lic'))}catch(e){return null}}
+window.licTxt=function(){var l=lic();if(!l)return'Prueba sin límites';if(l.anulado)return'Código anulado';return l.vence>nowT()?'Código válido hasta '+fdt(l.vence):'Código vencido el '+fdt(l.vence)};
+window.licAct=async function(){
+ var c=await dlg({msg:'Escribe tu código de acceso',input:true,ok:'Activar',cancel:'Cancelar'});if(!c||!String(c).trim())return;
+ try{var r=await rpc('canjear_codigo',{p_id:did(),p_codigo:String(c).trim()});seen(r.hora);s('inv_lic',JSON.stringify({vence:r.vence}));await say('Código activado. '+licTxt()+'.')}
+ catch(e){var m=String(e&&e.message||'');await say(/usado/.test(m)?'Ese código ya fue usado en otro teléfono.':/anulado/.test(m)?'Ese código fue anulado.':/valido/.test(m)?'Código no válido. Revísalo.':'No se pudo activar. ¿Hay internet?')}
+};
+function ping(f){
+ if(!navigator.onLine||(!f&&Date.now()-lastPing<6e5))return;lastPing=Date.now();
+ try{rpc('ping_dispositivo',{p_id:did(),p_version:AV,p_locales:D.est.length,p_productos:cnt(),p_uso7:uso7()}).then(function(r){
+  if(!r)return;seen(r.hora);var l=lic();if(r.vence){s('inv_lic',JSON.stringify({vence:r.vence,anulado:!!r.anulado}))}else if(l&&r.anulado){l.anulado=true;s('inv_lic',JSON.stringify(l))}s('inv_lim',String(r.limites||''))
+ }).catch(function(){lastPing=0})}catch(e){lastPing=0}
 }
 setTimeout(ping,6000);
 window.addEventListener('online',function(){setTimeout(ping,3000)});
-/* ===== Panel de uso (solo dueño): toca 7 veces el título "Inventario" ===== */
+document.addEventListener('visibilitychange',function(){if(document.visibilityState=='visible')setTimeout(ping,2000)});
+/* ===== Panel (solo dueño): 7 toques al título ===== */
 var taps=0,tt=0;
 document.addEventListener('click',function(ev){
  var h=ev.target&&ev.target.closest?ev.target.closest('h1'):null;
  if(!h||h.textContent.indexOf('Inventario')<0||h.textContent.indexOf('📦')<0)return;
- var n=Date.now();if(n-tt>5000)taps=0;tt=n;taps++;
- if(taps>=7){taps=0;panel()}
+ var n=Date.now();if(n-tt>5000)taps=0;tt=n;taps++;if(taps>=7){taps=0;panel()}
 });
-function ago(t){var s=(Date.now()-new Date(t).getTime())/1000;if(!(s>=0))return'—';if(s<90)return'ahora';if(s<3600)return Math.round(s/60)+' min';if(s<86400)return Math.round(s/3600)+' h';return Math.round(s/86400)+' d'}
+function ago(t){var x=(Date.now()-new Date(t).getTime())/1000;if(!(x>=0))return'—';if(x<90)return'ahora';if(x<3600)return Math.round(x/60)+' min';if(x<86400)return Math.round(x/3600)+' h';return Math.round(x/86400)+' d'}
+async function call(fn,a){var k=ld('inv_pk','');a.p_clave=k;return rpc(fn,a)}
 async function panel(){
  var k=ld('inv_pk','');
  for(;;){
   if(!k){k=await dlg({msg:'Clave del panel',input:true,ok:'Entrar',cancel:'Cancelar'});if(!k)return;k=String(k).trim();if(!k)return}
-  try{
-   var r=await rpc('panel_dispositivos',{p_clave:k});
-   try{localStorage.setItem('inv_pk',JSON.stringify(k))}catch(e){}
-   return pnShow(r);
-  }catch(e){
-   try{localStorage.removeItem('inv_pk')}catch(x){}
-   var m=String(e&&e.message||'');
+  try{var r=await rpc('panel_dispositivos',{p_clave:k});s('inv_pk',JSON.stringify(k));return pnShow(r)}
+  catch(e){try{localStorage.removeItem('inv_pk')}catch(x){}var m=String(e&&e.message||'');
    if(/clave/i.test(m)){await say('Clave incorrecta');k='';continue}
-   if(/404/.test(m)){await say('Falta crear el panel en la base de datos (pegar el SQL).');return}
-   await say('No se pudo abrir el panel. ¿Hay internet?');return;
-  }
+   if(/404/.test(m)){await say('Falta ejecutar el SQL nuevo en la base de datos.');return}
+   await say('No se pudo abrir el panel. ¿Hay internet?');return}
  }
 }
 function pnShow(r){
- var me=did(),L=r.lista||[],vs=(r.versiones||[]).map(function(x){return'v'+x.v+': '+x.n}).join(' · ');
+ LAST=r;var me=did(),L=(r.lista||[]).filter(function(d){var a=(Date.now()-new Date(d.ultima))/864e5;return PF=='a'?a<=7:PF=='i'?a>14:PF=='v'?d.version<AV:true});
  var row=function(a,b){return'<div class="row it"><span>'+a+'</span><b>'+b+'</b></div>'};
- show('<h3>📡 Panel de uso</h3>'
-  +row('Dispositivos en total',r.total)
-  +row('Abrieron hoy',r.hoy)
-  +row('Abrieron esta semana',r.semana)
-  +row('Abrieron este mes',r.mes)
-  +row('Nuevos esta semana',r.nuevos_semana)
-  +'<div class="m" style="margin:8px 0">Versiones: '+E(vs||'—')+'</div>'
-  +'<div class="m" style="margin:10px 0 2px"><b>Últimos dispositivos</b></div>'
-  +L.map(function(d){return'<div class="it"><b>'+E(String(d.id).slice(0,6))+'</b>'+(d.id==me?' · este teléfono':'')+'<div class="m">v'+E(d.version)+' · visto hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.locales)+' locales · '+E(d.productos)+' productos<br>desde hace '+ago(d.primera)+'</div></div>'}).join('')
-  +'<button class="s" onclick="cm()" style="margin-top:12px">Cerrar</button>');
+ var fb=function(k,t){return'<button class="s" style="'+(PF==k?'border-color:var(--a,#fff)':'')+';padding:6px 10px;margin:2px" onclick="pnFil(\''+k+'\')">'+t+'</button>'};
+ var C=(r.codigos||[]).map(function(c){var st=c.anulado?'anulado':!c.activado?'sin usar':new Date(c.vence)>new Date()?'activo hasta '+fdt(new Date(c.vence)):'vencido';return'<div class="it" onclick="pnCod(\''+E(c.codigo)+'\')"><b>'+E(c.codigo)+'</b> · '+E(c.cliente||'')+'<div class="m">'+c.dias+' días · '+st+'</div></div>'}).join('');
+ show('<h3>📡 Panel de uso</h3>'+row('Dispositivos',r.total)+row('Abrieron hoy',r.hoy)+row('Esta semana',r.semana)+row('Este mes',r.mes)+row('Nuevos esta semana',r.nuevos_semana)
+  +'<div class="m" style="margin:8px 0">Versiones: '+E((r.versiones||[]).map(function(x){return'v'+x.v+': '+x.n}).join(' · ')||'—')+'</div>'
+  +'<div style="margin:6px 0">'+fb('t','Todos')+fb('a','Activos 7d')+fb('i','Sin abrir 14d')+fb('v','Versión vieja')+'</div>'
+  +L.map(function(d){return'<div class="it" onclick="pnNom(\''+E(d.id)+'\')"><b>'+E(d.nombre||String(d.id).slice(0,6))+'</b>'+(d.id==me?' · este teléfono':'')+'<div class="m">v'+E(d.version)+' · visto hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros en 7 días · '+E(d.locales)+' locales · '+E(d.productos)+' productos</div></div>'}).join('')
+  +'<div class="m" style="margin:12px 0 2px"><b>Códigos</b></div>'+(C||'<div class="m">Aún no hay códigos.</div>')
+  +'<button class="b" onclick="pnNuevo()" style="margin-top:10px">Generar código</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>');
 }
+async function reload(){try{pnShow(await rpc('panel_dispositivos',{p_clave:ld('inv_pk','')}))}catch(e){}}
+window.pnFil=function(k){PF=k;if(LAST)pnShow(LAST)};
+window.pnNom=async function(id){var d=(LAST.lista||[]).filter(function(x){return x.id==id})[0]||{};var n=await dlg({msg:'Nombre para este dispositivo',input:true,def:d.nombre||'',ok:'Guardar',cancel:'Cancelar'});if(n===null||n===false||n===undefined)return;try{await call('panel_nombre',{p_id:id,p_nombre:String(n).trim()})}catch(e){await say('No se pudo guardar.')}reload()};
+window.pnNuevo=async function(){var c=await dlg({msg:'Cliente (nombre)',input:true,ok:'Siguiente',cancel:'Cancelar'});if(c===null||c===false||c===undefined)return;var d=await dlg({msg:'Días de validez (cuentan desde que se activa)',input:true,def:'30',ok:'Generar',cancel:'Cancelar'});d=parseInt(d,10);if(!(d>0))return;try{var code=await call('panel_crear_codigo',{p_cliente:String(c).trim(),p_dias:d});await say('Código: '+code+' ('+d+' días). Mándaselo al cliente.')}catch(e){await say('No se pudo crear el código.')}reload()};
+window.pnCod=async function(code){if(!(await ask('¿Anular el código '+code+'?',{ok:'Anular',danger:true})))return;try{await call('panel_anular',{p_codigo:code})}catch(e){await say('No se pudo anular.')}reload()};
 })();
 </script></body></html>
