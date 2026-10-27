@@ -659,7 +659,7 @@ acs();
 r();setTimeout(askCam,1200);
 </script>
 <script>(function(){
-var APP_V=62,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=63,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -699,9 +699,17 @@ function nowT(){return Math.max(Date.now(),+g('inv_maxt')||0)}
 function fdt(ms){return new Date(ms).toLocaleDateString('es',{day:'2-digit',month:'2-digit',year:'numeric'})}
 function lic(){try{return JSON.parse(g('inv_lic'))}catch(e){return null}}
 window.licTxt=function(){var l=lic();if(!l)return g('inv_lim')==='on'?'Prueba: 1 establecimiento y 5 productos':'Prueba sin límites';if(l.anulado)return'Código anulado';return l.vence>nowT()?'Código válido hasta '+fdt(l.vence):'Código vencido el '+fdt(l.vence)};
-window.licAct=async function(){
- var c=await dlg({msg:'Escribe tu código de acceso',input:true,ok:'Activar',cancel:'Cancelar'});if(!c||!String(c).trim())return;
- try{var r=await rpc('canjear_codigo',{p_id:did(),p_codigo:String(c).trim()});seen(r.hora);s('inv_lic',JSON.stringify({vence:r.vence}));await say('Código activado. '+licTxt()+'.')}
+var DUENO='5353186825';
+function idf(){return did().match(/.{1,5}/g).join('-')}
+function msgId(){return'Hola, quiero activar Inventario. Mi código de app: '+idf()+' (v'+AV+')'}
+function copyTxt(t){var ok=function(){toast('Copiado')};var fb=function(){try{var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();document.execCommand('copy');document.body.removeChild(a);ok()}catch(e){say('No se pudo copiar. Anótalo: '+t)}};try{navigator.clipboard.writeText(t).then(ok,fb)}catch(e){fb()}}
+window.licCopy=function(){copyTxt(idf())};
+window.licWA=function(){location.href='https://wa.me/'+DUENO+'?text='+encodeURIComponent(msgId())};
+window.licSMS=function(){location.href='sms:+'+DUENO+'?body='+encodeURIComponent(msgId())};
+window.licAct=function(){show('<h3>🔑 Activar código</h3><div class="m">Tu código de app</div><div style="font-size:19px;font-weight:700;word-break:break-all;margin:6px 0 10px">'+idf()+'</div><div class="m" style="margin-bottom:6px">Envíaselo al dueño para que te dé tu código de acceso.</div><button class="s" onclick="licCopy()">📋 Copiar mi código</button><button class="s" onclick="licWA()">💬 Enviar por WhatsApp</button><button class="s" onclick="licSMS()">✉️ Enviar por SMS</button><div class="m" style="margin:14px 0 6px">¿Ya tienes tu código de acceso?</div><input id="lcin" placeholder="L-XXXXX-XXXXX" autocapitalize="characters" autocomplete="off"><button class="b" onclick="licGo()" style="margin-top:8px">Activar</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>')};
+window.licGo=async function(){
+ var c=(G('lcin').value||'').trim();if(!c)return;
+ try{var r=await rpc('canjear_codigo',{p_id:did(),p_codigo:c});seen(r.hora);s('inv_lic',JSON.stringify({vence:r.vence}));cm();await say('Código activado. '+licTxt()+'.')}
  catch(e){var m=String(e&&e.message||'');await say(/usado/.test(m)?'Ese código ya fue usado en otro teléfono.':/anulado/.test(m)?'Ese código fue anulado.':/valido/.test(m)?'Código no válido. Revísalo.':'No se pudo activar. ¿Hay internet?')}
 };
 function ping(f){
@@ -751,7 +759,7 @@ function pnShow(r){
  show('<h3>📡 Panel de uso</h3>'+row('Dispositivos',r.total)+row('Abrieron hoy',r.hoy)+row('Esta semana',r.semana)+row('Este mes',r.mes)+row('Nuevos esta semana',r.nuevos_semana)
   +'<div class="m" style="margin:8px 0">Versiones: '+E((r.versiones||[]).map(function(x){return'v'+x.v+': '+x.n}).join(' · ')||'—')+'</div>'
   +'<div style="margin:6px 0">'+fb('t','Todos')+fb('a','Activos 7d')+fb('i','Sin abrir 14d')+fb('v','Versión vieja')+'</div>'
-  +L.map(function(d){return'<div class="it" onclick="pnNom(\''+E(d.id)+'\')"><b>'+E(d.nombre||String(d.id).slice(0,6))+'</b>'+(d.id==me?' · este teléfono':'')+'<div class="m">v'+E(d.version)+' · visto hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros en 7 días · '+E(d.locales)+' locales · '+E(d.productos)+' productos</div></div>'}).join('')
+  +L.map(function(d){return'<div class="it" onclick="pnNom(\''+E(d.id)+'\')"><b>'+E(d.nombre||String(d.id).slice(0,5))+'</b>'+(d.id==me?' · este teléfono':'')+'<div class="m">v'+E(d.version)+' · visto hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros en 7 días · '+E(d.locales)+' locales · '+E(d.productos)+' productos</div></div>'}).join('')
   +'<div class="m" style="margin:12px 0 2px"><b>Códigos</b></div>'+(C||'<div class="m">Aún no hay códigos.</div>')
   +'<button class="s" onclick="pnLim()" style="margin-top:10px">Límites de prueba: '+(r.limites=='on'?'ENCENDIDOS':'apagados')+'</button><button class="b" onclick="pnNuevo()" style="margin-top:8px">Generar código</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>');
 }
