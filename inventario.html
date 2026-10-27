@@ -190,7 +190,7 @@ es.forEach(e=>{const o=opn(e);e.pr.filter(p=>p!==o&&p.end&&!p.ps.length&&tc.has(
 RV.forEach(z=>{const e=z.e;e.dl=e.dl||[];if(!e.pr.some(q=>q.id==z.p.id))return;z.p.ps.forEach(x=>e.dl.push(String(x.id)));e.pr=e.pr.filter(q=>q.id!=z.p.id);e.dl.push(String(z.p.id))});
 sv();cm();r();toast('Se borraron '+S.length+' producto(s) y '+RV.length+' registro(s) vacío(s).')}
 let LSZ=0,LWN=0;
-const persist=()=>{try{const s=JSON.stringify(D);localStorage.setItem('inv2',s);LSZ=s.length;if(LSZ>3.5e6&&!LWN){LWN=1;setTimeout(()=>toast('⚠️ La app ocupa '+(LSZ/1e6).toFixed(1)+' MB de unos 5 MB. Guarda un respaldo y usa 🧹 Limpiar.',10000),1500)}}catch(e){say('NO se pudo guardar: el teléfono se quedó sin espacio. Guarda un respaldo ahora (⋮ → Guardar respaldo) y usa 🧹 Limpiar.')}};
+const persist=()=>{try{const s=JSON.stringify(D);localStorage.setItem('inv2',s);LSZ=s.length;if(LSZ>3.5e6&&!LWN){LWN=1;setTimeout(()=>toast('⚠️ La app ocupa '+(LSZ/1e6).toFixed(1)+' MB de unos 5 MB. Guarda un respaldo.',10000),1500)}}catch(e){say('NO se pudo guardar: el teléfono se quedó sin espacio. Guarda un respaldo ahora (⋮ → Guardar respaldo).')}};
 const sv=()=>{D.est.forEach(e=>{dedupe(e);lateK(e);stamp(e,false)});persist();autoSync()};
 D.est.forEach(e=>{norm(e);dedupe(e);lateK(e);stamp(e,true)});persist();
 const busy=()=>!!G('md').innerHTML||(document.activeElement&&document.activeElement.id=='sq');
@@ -503,7 +503,7 @@ const TH=[['auto','Automático','#1d4ed8','#0b1220','#6b9bff'],['esmeralda','Esm
 const curTh=()=>{try{const t=localStorage.getItem('inv2t');return TH.some(x=>x[0]==t)?t:'auto'}catch(e){return'auto'}};
 function setTheme(id){try{localStorage.setItem('inv2t',id)}catch(e){}if(id=='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',id);const m=document.querySelector('meta[name=theme-color]'),t=TH.find(x=>x[0]==id);if(m&&t)m.setAttribute('content',t[2]);th()}
 function th(){const c=curTh();show(`<h3>Cambiar tema</h3>`+TH.map(x=>`<div class="card" style="margin:8px 0;${x[0]==c?'border-color:var(--p)':''}" onclick="setTheme('${x[0]}')"><div class="row"><b>${x[0]==c?'✓ ':''}${x[1]}</b><span style="display:flex;gap:4px"><i style="width:18px;height:18px;border-radius:50%;background:${x[2]};border:1px solid var(--b)"></i><i style="width:18px;height:18px;border-radius:50%;background:${x[3]};border:1px solid var(--b)"></i><i style="width:18px;height:18px;border-radius:50%;background:${x[4]};border:1px solid var(--b)"></i></span></div></div>`).join('')+`<button class="s" onclick="cm()">Cerrar</button>`)}
-function mn(){show(`<h3>Opciones</h3><div class="m ${old()?'no':''}">${lb()?'Último respaldo: '+fd(lb()):'Aún no has guardado un respaldo'}</div><div class="m ${LSZ>3.5e6?'no':''}">Espacio usado: ${(LSZ/1e6).toFixed(1)} MB de ~5 MB</div><button class="s" onclick="cm();syncAll(false)">🔄 Sincronizar todos los locales</button><button class="s" onclick="cm();limpiarEliminados()">🧹 Limpiar productos eliminados y Registros Vacíos</button><button class="s" onclick="th()">🎨 Cambiar tema</button><button class="b" onclick="guardar()">Guardar respaldo en Drive</button><label class="s" style="display:block;text-align:center;margin:8px 0 0">Restaurar desde respaldo<input type="file" accept=".json" onchange="imp(event)" hidden></label>${hp()?'<button class="s" onclick="undo()">Deshacer última restauración</button>':''}<button class="s" onclick="cm()">Cerrar</button>`)}
+function mn(){show(`<h3>Opciones</h3><div class="m ${old()?'no':''}">${lb()?'Último respaldo: '+fd(lb()):'Aún no has guardado un respaldo'}</div><div class="m ${LSZ>3.5e6?'no':''}">Espacio usado: ${(LSZ/1e6).toFixed(1)} MB de ~5 MB</div><button class="s" onclick="cm();syncAll(false)">🔄 Sincronizar todos los locales</button><button class="s" onclick="th()">🎨 Cambiar tema</button><button class="b" onclick="guardar()">Guardar respaldo en Drive</button><label class="s" style="display:block;text-align:center;margin:8px 0 0">Restaurar desde respaldo<input type="file" accept=".json" onchange="imp(event)" hidden></label>${hp()?'<button class="s" onclick="undo()">Deshacer última restauración</button>':''}<button class="s" onclick="cm()">Cerrar</button>`)}
 const dump=()=>JSON.stringify({v:'inventario',D});
 function ex(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dump()],{type:'application/json'}));a.download='respaldo-inventario-'+td()+'.json';a.click();mkb();r();cm()}
 async function guardar(){const C=window.Capacitor,n='respaldo-inventario-'+td()+'.json';
@@ -659,7 +659,7 @@ acs();
 r();setTimeout(askCam,1200);
 </script>
 <script>(function(){
-var APP_V=58,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=59,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
