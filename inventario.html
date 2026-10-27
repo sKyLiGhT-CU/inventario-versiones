@@ -659,11 +659,11 @@ acs();
 r();setTimeout(askCam,1200);
 </script>
 <script>(function(){
-var APP_V=59,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=60,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
-var err=false;window.addEventListener('error',function(){err=true});
+window.APP_V_=APP_V;var err=false;window.addEventListener('error',function(){err=true});
 /* Si la app arrancó sin errores, la versión descargada queda confirmada */
 setTimeout(function(){if(!err)d('try')},2500);
 /* Aviso de que se actualizó */
@@ -684,5 +684,61 @@ function chk(){
 }
 setTimeout(chk,5000);
 window.addEventListener('online',function(){setTimeout(chk,2000)});
+})();
+</script>
+<script>(function(){
+var AV=window.APP_V_||0;
+function did(){var k='inv_did',v=null;try{v=localStorage.getItem(k)}catch(e){}
+ if(!v||v.length<12){v='';try{var a=new Uint8Array(10);crypto.getRandomValues(a);a.forEach(function(b){v+=('0'+b.toString(16)).slice(-2)})}catch(e){for(var i=0;i<20;i++)v+=Math.floor(Math.random()*16).toString(16)}
+  try{localStorage.setItem(k,v)}catch(e){}}
+ return v}
+function cnt(){try{return D.est.reduce(function(a,e){var o=opn(e);return a+(o&&o.ps?o.ps.length:0)},0)}catch(e){return 0}}
+var pinged=false;
+function ping(){
+ if(pinged||!navigator.onLine)return;pinged=true;
+ try{rpc('ping_dispositivo',{p_id:did(),p_version:AV,p_locales:D.est.length,p_productos:cnt()}).catch(function(){pinged=false})}catch(e){pinged=false}
+}
+setTimeout(ping,6000);
+window.addEventListener('online',function(){setTimeout(ping,3000)});
+/* ===== Panel de uso (solo dueño): toca 7 veces el título "Inventario" ===== */
+var taps=0,tt=0;
+document.addEventListener('click',function(ev){
+ var h=ev.target&&ev.target.closest?ev.target.closest('h1'):null;
+ if(!h||h.textContent.indexOf('Inventario')<0||h.textContent.indexOf('📦')<0)return;
+ var n=Date.now();if(n-tt>5000)taps=0;tt=n;taps++;
+ if(taps>=7){taps=0;panel()}
+});
+function ago(t){var s=(Date.now()-new Date(t).getTime())/1000;if(!(s>=0))return'—';if(s<90)return'ahora';if(s<3600)return Math.round(s/60)+' min';if(s<86400)return Math.round(s/3600)+' h';return Math.round(s/86400)+' d'}
+async function panel(){
+ var k=ld('inv_pk','');
+ for(;;){
+  if(!k){k=await dlg({msg:'Clave del panel',input:true,ok:'Entrar',cancel:'Cancelar'});if(!k)return;k=String(k).trim();if(!k)return}
+  try{
+   var r=await rpc('panel_dispositivos',{p_clave:k});
+   try{localStorage.setItem('inv_pk',JSON.stringify(k))}catch(e){}
+   return pnShow(r);
+  }catch(e){
+   try{localStorage.removeItem('inv_pk')}catch(x){}
+   var m=String(e&&e.message||'');
+   if(/clave/i.test(m)){await say('Clave incorrecta');k='';continue}
+   if(/404/.test(m)){await say('Falta crear el panel en la base de datos (pegar el SQL).');return}
+   await say('No se pudo abrir el panel. ¿Hay internet?');return;
+  }
+ }
+}
+function pnShow(r){
+ var me=did(),L=r.lista||[],vs=(r.versiones||[]).map(function(x){return'v'+x.v+': '+x.n}).join(' · ');
+ var row=function(a,b){return'<div class="row it"><span>'+a+'</span><b>'+b+'</b></div>'};
+ show('<h3>📡 Panel de uso</h3>'
+  +row('Dispositivos en total',r.total)
+  +row('Abrieron hoy',r.hoy)
+  +row('Abrieron esta semana',r.semana)
+  +row('Abrieron este mes',r.mes)
+  +row('Nuevos esta semana',r.nuevos_semana)
+  +'<div class="m" style="margin:8px 0">Versiones: '+E(vs||'—')+'</div>'
+  +'<div class="m" style="margin:10px 0 2px"><b>Últimos dispositivos</b></div>'
+  +L.map(function(d){return'<div class="it"><b>'+E(String(d.id).slice(0,6))+'</b>'+(d.id==me?' · este teléfono':'')+'<div class="m">v'+E(d.version)+' · visto hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.locales)+' locales · '+E(d.productos)+' productos<br>desde hace '+ago(d.primera)+'</div></div>'}).join('')
+  +'<button class="s" onclick="cm()" style="margin-top:12px">Cerrar</button>');
+}
 })();
 </script></body></html>
