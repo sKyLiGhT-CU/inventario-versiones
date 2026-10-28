@@ -659,7 +659,7 @@ acs();
 r();setTimeout(askCam,1200);
 </script>
 <script>(function(){
-var APP_V=63,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=64,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -706,7 +706,7 @@ function copyTxt(t){var ok=function(){toast('Copiado')};var fb=function(){try{va
 window.licCopy=function(){copyTxt(idf())};
 window.licWA=function(){location.href='https://wa.me/'+DUENO+'?text='+encodeURIComponent(msgId())};
 window.licSMS=function(){location.href='sms:+'+DUENO+'?body='+encodeURIComponent(msgId())};
-window.licAct=function(){show('<h3>🔑 Activar código</h3><div class="m">Tu código de app</div><div style="font-size:19px;font-weight:700;word-break:break-all;margin:6px 0 10px">'+idf()+'</div><div class="m" style="margin-bottom:6px">Envíaselo al dueño para que te dé tu código de acceso.</div><button class="s" onclick="licCopy()">📋 Copiar mi código</button><button class="s" onclick="licWA()">💬 Enviar por WhatsApp</button><button class="s" onclick="licSMS()">✉️ Enviar por SMS</button><div class="m" style="margin:14px 0 6px">¿Ya tienes tu código de acceso?</div><input id="lcin" placeholder="L-XXXXX-XXXXX" autocapitalize="characters" autocomplete="off"><button class="b" onclick="licGo()" style="margin-top:8px">Activar</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>')};
+window.licAct=function(){show('<h3>🔑 Activar código</h3><div class="m">Tu código de app</div><div onclick="licCopy()" style="font-size:19px;font-weight:700;word-break:break-all;text-align:center;padding:12px;margin:6px 0 4px;border:1px dashed var(--b,#888);border-radius:12px">'+idf()+'</div><div class="m" style="margin-bottom:8px">Toca el código para copiarlo</div><div class="m" style="margin-bottom:6px">Envíaselo al dueño para que te dé tu código de acceso.</div><button class="s" onclick="licCopy()">📋 Copiar mi código</button><button class="s" onclick="licWA()">💬 Enviar por WhatsApp</button><button class="s" onclick="licSMS()">✉️ Enviar por SMS</button><div class="m" style="margin:14px 0 6px">¿Ya tienes tu código de acceso?</div><input id="lcin" placeholder="L-XXXXX-XXXXX" autocapitalize="characters" autocomplete="off"><button class="b" onclick="licGo()" style="margin-top:8px">Activar</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>')};
 window.licGo=async function(){
  var c=(G('lcin').value||'').trim();if(!c)return;
  try{var r=await rpc('canjear_codigo',{p_id:did(),p_codigo:c});seen(r.hora);s('inv_lic',JSON.stringify({vence:r.vence}));cm();await say('Código activado. '+licTxt()+'.')}
@@ -767,7 +767,16 @@ async function reload(){try{pnShow(await rpc('panel_dispositivos',{p_clave:ld('i
 window.pnLim=async function(){var on=!(LAST&&LAST.limites=='on');if(!(await ask(on?'¿Encender los límites? Quien no tenga un código válido quedará en modo prueba (1 establecimiento y 5 productos). Se aplica cuando cada teléfono se conecte.':'¿Apagar los límites? Todos vuelven a usar la app sin restricciones.',{ok:on?'Encender':'Apagar',danger:on})))return;try{await call('panel_limites',{p_on:on})}catch(e){await say('No se pudo cambiar.')}reload()};
 window.pnFil=function(k){PF=k;if(LAST)pnShow(LAST)};
 window.pnNom=async function(id){var d=(LAST.lista||[]).filter(function(x){return x.id==id})[0]||{};var n=await dlg({msg:'Nombre para este dispositivo',input:true,def:d.nombre||'',ok:'Guardar',cancel:'Cancelar'});if(n===null||n===false||n===undefined)return;try{await call('panel_nombre',{p_id:id,p_nombre:String(n).trim()})}catch(e){await say('No se pudo guardar.')}reload()};
-window.pnNuevo=async function(){var c=await dlg({msg:'Cliente (nombre)',input:true,ok:'Siguiente',cancel:'Cancelar'});if(c===null||c===false||c===undefined)return;var d=await dlg({msg:'Días de validez (cuentan desde que se activa)',input:true,def:'30',ok:'Generar',cancel:'Cancelar'});d=parseInt(d,10);if(!(d>0))return;try{var code=await call('panel_crear_codigo',{p_cliente:String(c).trim(),p_dias:d});await say('Código: '+code+' ('+d+' días). Mándaselo al cliente.')}catch(e){await say('No se pudo crear el código.')}reload()};
-window.pnCod=async function(code){if(!(await ask('¿Anular el código '+code+'?',{ok:'Anular',danger:true})))return;try{await call('panel_anular',{p_codigo:code})}catch(e){await say('No se pudo anular.')}reload()};
+var CP={};
+window.cpyK=function(k){copyTxt(CP[k])};
+function cstat(c){return c.anulado?'anulado':!c.activado?'sin usar':new Date(c.vence)>new Date()?'activo hasta '+fdt(new Date(c.vence)):'vencido'}
+function cShow(c){
+ CP.c=c.codigo;CP.m='Tu código de acceso de Inventario: '+c.codigo+'. Válido '+c.dias+' días desde que lo actives. En la app: ⋮ → Activar código.';
+ show('<h3>🔑 Código</h3><div class="m">Toca el código para copiarlo</div><div onclick="cpyK(\'c\')" style="font-size:22px;font-weight:700;text-align:center;padding:12px;margin:8px 0;border:1px dashed var(--b,#888);border-radius:12px;word-break:break-all">'+E(c.codigo)+'</div><div class="m">'+E(c.cliente||'')+' · '+c.dias+' días · '+cstat(c)+'</div><button class="b" onclick="cpyK(\'m\')" style="margin-top:10px">📋 Copiar mensaje para el cliente</button><button class="s" onclick="pnAnu(\''+E(c.codigo)+'\')" style="margin-top:8px">Anular código</button><button class="s" onclick="pnBack()" style="margin-top:8px">Volver al panel</button>')
+}
+window.pnBack=function(){reload()};
+window.pnNuevo=async function(){var c=await dlg({msg:'Cliente (nombre)',input:true,ok:'Siguiente',cancel:'Cancelar'});if(c===null||c===false||c===undefined)return;var d=await dlg({msg:'Días de validez (cuentan desde que se activa)',input:true,def:'30',ok:'Generar',cancel:'Cancelar'});d=parseInt(d,10);if(!(d>0))return;try{var code=await call('panel_crear_codigo',{p_cliente:String(c).trim(),p_dias:d});cShow({codigo:code,cliente:String(c).trim(),dias:d,activado:null,anulado:false})}catch(e){await say('No se pudo crear el código.');reload()}};
+window.pnCod=function(code){var c=(LAST&&LAST.codigos||[]).filter(function(x){return x.codigo==code})[0];if(c)cShow(c)};
+window.pnAnu=async function(code){if(!(await ask('¿Anular el código '+code+'?',{ok:'Anular',danger:true})))return;try{await call('panel_anular',{p_codigo:code})}catch(e){await say('No se pudo anular.')}reload()};
 })();
 </script></body></html>
