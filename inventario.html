@@ -659,7 +659,7 @@ acs();
 r();setTimeout(askCam,1200);
 </script>
 <script>(function(){
-var APP_V=65,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=67,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -713,22 +713,34 @@ window.licGo=async function(){
  try{var r=await rpc('canjear_codigo',{p_id:did(),p_codigo:c});seen(r.hora);s('inv_lic',JSON.stringify({vence:r.vence}));cm();await say('Código activado. '+licTxt()+'.')}
  catch(e){var m=String(e&&e.message||'');await say(/usado/.test(m)?'Ese código ya fue usado en otro teléfono.':/anulado/.test(m)?'Ese código fue anulado.':/valido/.test(m)?'Código no válido. Revísalo.':'No se pudo activar. ¿Hay internet?')}
 };
+var regd={};
+function wkSync(){try{var own=[],wkc=[];D.est.forEach(function(e){if(!e.code)return;if(e.rol=='t')wkc.push(e.code);else if(e.rol=='d')own.push(e.code)});own.slice(0,20).forEach(function(c){if(regd[c])return;regd[c]=1;rpc('reg_dueno',{p_code:c,p_id:did()}).catch(function(){regd[c]=0})});if(wkc.length)rpc('est_estado',{p_codes:wkc.slice(0,20)}).then(function(x){if(x&&x.est){seen(x.hora);s('inv_wkl',JSON.stringify(x.est));try{window.r()}catch(e){}}}).catch(function(){})}catch(e){}}
 function ping(f){
  if(!navigator.onLine||(!f&&Date.now()-lastPing<6e5))return;lastPing=Date.now();
  try{rpc('ping_dispositivo',{p_id:did(),p_version:AV,p_locales:D.est.length,p_productos:cnt(),p_uso7:uso7()}).then(function(r){
-  if(!r)return;seen(r.hora);var l=lic();if(r.vence){s('inv_lic',JSON.stringify({vence:r.vence,anulado:!!r.anulado}))}else if(l&&r.anulado){l.anulado=true;s('inv_lic',JSON.stringify(l))}s('inv_lim',String(r.limites||''))
+  if(!r)return;seen(r.hora);var l=lic();if(r.vence){s('inv_lic',JSON.stringify({vence:r.vence,anulado:!!r.anulado}))}else if(l&&r.anulado){l.anulado=true;s('inv_lic',JSON.stringify(l))}s('inv_lim',String(r.limites||''));s('inv_ex',r.exento?'1':'0');wkSync()
  }).catch(function(){lastPing=0})}catch(e){lastPing=0}
 }
 /* ===== Modo prueba (solo si el dueño enciende los límites desde el panel) ===== */
 function licOk(){var l=lic();return !!l&&!l.anulado&&l.vence>nowT()}
-function trial(){if(ld('inv_pk',''))return false;return g('inv_lim')==='on'&&!licOk()}
 function blk(m){dlg({msg:m,ok:'Activar código',cancel:'Cerrar'}).then(function(v){if(v===true)licAct()})}
+function grace(){var l=lic();return !!l&&!l.anulado&&l.vence<=nowT()&&l.vence+3*864e5>nowT()}
+function trial(){if(g('inv_ex')==='1')return false;if(ld('inv_pk','')&&!g('inv_asc'))return false;return g('inv_lim')==='on'&&!licOk()&&!grace()}
+function wkLocked(e){var m=ld('inv_wkl',{});return !!e&&e.rol=='t'&&!!m&&m[e.code]===false}
+function lockedP(id){try{var e=gE();if(!e)return false;var o=opn(e),a=(o&&o.ps?o.ps:[]).slice(0,5).map(function(x){return x.id});if(wk(e))return wkLocked(e)&&a.indexOf(id)<0;if(!trial())return false;return a.indexOf(id)<0}catch(x){return false}}
+function lockedE(id){try{if(!trial())return false;var e=D.est.find(function(z){return z.id==id});if(!e||wk(e))return false;var own=D.est.filter(function(z){return !wk(z)});return !!own[0]&&own[0].id!=id}catch(x){return false}}
+var _go=window.go,_pv=window.pv,_r=window.r;
+window.go=function(id){if(lockedE(id)){blk('Tu código venció. En modo prueba solo puedes usar tu primer establecimiento. Activa un código para recuperar el acceso.');return}return _go.apply(this,arguments)};
+window.pv=function(id){if(lockedP(id)){var e0=gE();if(e0&&wk(e0)){say('La licencia del dueño de este local venció. Pídele que la renueve para volver a usar todos los productos.');return}blk('Tu código venció. En modo prueba solo puedes usar tus primeros 5 productos. Activa un código para recuperar el acceso.');return}return _pv.apply(this,arguments)};
+function lockMark(){var e0=null;try{e0=gE()}catch(x){}if(!trial()&&!(e0&&wkLocked(e0)))return;var n=document.querySelectorAll('[onclick^="pv("],[onclick^="go("]');for(var i=0;i<n.length;i++){var c=n[i],a=c.getAttribute('onclick')||'',m=/^(pv|go)\('?([^')]+)'?\)/.exec(a);if(!m)continue;if(m[1]=='pv'?lockedP(m[2]):lockedE(m[2])){c.style.opacity='.45';if(!c.dataset.lk){c.dataset.lk='1';var b=c.querySelector('b');if(b)b.textContent='🔒 '+b.textContent}}}}
+window.r=function(){var x=_r.apply(this,arguments);try{lockMark()}catch(e){}return x};
+window.pnAsc=function(){var on=!g('inv_asc');if(on)s('inv_asc','1');else{try{localStorage.removeItem('inv_asc')}catch(e){}}cm();try{r()}catch(e){}toast(on?'Ahora ves la app como un cliente sin código':'Volviste a modo dueño',5000)};
 var _ne=window.ne,_np=window.np;
 window.ne=function(){try{if(trial()&&D.est.filter(function(e){return !wk(e)}).length>=1){blk('Versión de prueba: 1 establecimiento. Activa un código para agregar más.');return}}catch(e){}return _ne.apply(this,arguments)};
-window.np=function(){try{var e=gE();if(e&&!wk(e)&&trial()){var o=opn(e);if((o&&o.ps?o.ps.length:0)>=5){blk('Versión de prueba: hasta 5 productos. Activa un código para agregar más.');return}}}catch(x){}return _np.apply(this,arguments)};
+window.np=function(){try{var e=gE();if(e&&wk(e)&&wkLocked(e)){var o1=opn(e);if((o1&&o1.ps?o1.ps.length:0)>=5){say('La licencia del dueño venció. Pídele que la renueve para agregar productos.');return}}if(e&&!wk(e)&&trial()){var o=opn(e);if((o&&o.ps?o.ps.length:0)>=5){blk('Versión de prueba: hasta 5 productos. Activa un código para agregar más.');return}}}catch(x){}return _np.apply(this,arguments)};
 setTimeout(function(){try{var h=new Date().toISOString().slice(0,10);if(g('inv_noti')===h)return;var l=lic();if(!l||l.anulado)return;var d=(l.vence-nowT())/864e5;
  if(d>0&&d<=5){s('inv_noti',h);toast('Tu código vence en '+Math.ceil(d)+(Math.ceil(d)==1?' día':' días'),6000)}
- else if(d<=0&&trial()){s('inv_noti',h);toast('Tu código venció. Modo prueba: 1 establecimiento y 5 productos.',7000)}}catch(e){}},4000);
+ else if(d<=0&&grace()){s('inv_noti',h);toast('Tu código venció. Tienes '+Math.ceil(3+d)+' día(s) de gracia.',7000)}else if(d<=0&&trial()){s('inv_noti',h);toast('Tu código venció. Solo puedes usar tu primer establecimiento y tus primeros 5 productos.',8000)}}catch(e){}},4000);
 setTimeout(ping,6000);
 window.addEventListener('online',function(){setTimeout(ping,3000)});
 document.addEventListener('visibilitychange',function(){if(document.visibilityState=='visible')setTimeout(ping,2000)});
@@ -759,7 +771,7 @@ function pnShow(r){
  LAST=r;var me=did(),q=PQ.toLowerCase().replace(/-/g,'');
  var L=(r.lista||[]).filter(function(d){var a=(Date.now()-new Date(d.ultima))/864e5;if(PF=='a'&&!(a<=7))return false;if(PF=='i'&&!(a>14))return false;if(PF=='v'&&!(d.version<AV))return false;if(PF=='s'&&d.codigo)return false;return !q||((d.nombre||'')+' '+d.id).toLowerCase().indexOf(q)>=0});
  var st=function(a,b){return'<div style="flex:1;text-align:center"><b style="font-size:21px">'+a+'</b><div class="m">'+b+'</div></div>'};
- var rows=L.slice(0,PM).map(function(d){var c=d.codigo?'🔑 '+cstat({activado:d.activado,vence:d.vence}):'sin código';return'<div class="it" onclick="pnDev(\''+E(d.id)+'\')"><b>'+E(d.nombre||String(d.id).slice(0,5))+'</b>'+(d.id==me?' · este teléfono':'')+'<div class="m">v'+E(d.version)+' · hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros/7d · '+E(d.locales)+' locales · '+E(d.productos)+' productos</div><div class="m">'+c+'</div></div>'}).join('');
+ var rows=L.slice(0,PM).map(function(d){var c=d.codigo?'🔑 '+cstat({activado:d.activado,vence:d.vence}):'sin código';return'<div class="it" onclick="pnDev(\''+E(d.id)+'\')"><b>'+E(d.nombre||String(d.id).slice(0,5))+'</b>'+(d.id==me?' · este teléfono':'')+(d.exento?' · 🛡️ exento':'')+'<div class="m">v'+E(d.version)+' · hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros/7d · '+E(d.locales)+' locales · '+E(d.productos)+' productos</div><div class="m">'+c+'</div></div>'}).join('');
  var U=(r.codigos||[]).map(function(c){return'<div class="it" onclick="pnCod(\''+E(c.codigo)+'\')"><b>'+E(c.codigo)+'</b> · '+E(c.cliente||'')+'<div class="m">'+c.dias+' días · sin usar</div></div>'}).join('');
  show('<h3>📡 Panel de uso</h3><div class="row" style="margin:6px 0 10px">'+st(r.total,'dispositivos')+st(r.hoy,'hoy')+st(r.semana,'semana')+st(r.nuevos_semana,'nuevos')+'</div>'
   +'<div class="m">Versiones: '+E((r.versiones||[]).map(function(x){return'v'+x.v+': '+x.n}).join(' · ')||'—')+'</div>'
@@ -768,7 +780,7 @@ function pnShow(r){
   +'<div class="m" style="margin:8px 0 0">'+L.length+' dispositivo'+(L.length==1?'':'s')+'</div>'+(rows||'<div class="m">Nada con ese filtro.</div>')
   +(L.length>PM?'<button class="s" onclick="pnMore()" style="margin-top:8px">Ver más ('+(L.length-PM)+')</button>':'')
   +(U?'<div class="m" style="margin:14px 0 2px"><b>Códigos sin usar</b></div>'+U:'')
-  +'<button class="s" onclick="pnLim()" style="margin-top:12px">Límites de prueba: '+(r.limites=='on'?'ENCENDIDOS':'apagados')+'</button><button class="b" onclick="pnNuevo()" style="margin-top:8px">Generar código</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>');
+  +'<button class="s" onclick="pnAsc()" style="margin-top:12px">Probar como cliente: '+(g('inv_asc')?'ACTIVADO':'desactivado')+'</button><button class="s" onclick="pnLim()" style="margin-top:8px">Límites de prueba: '+(r.limites=='on'?'ENCENDIDOS':'apagados')+'</button><button class="b" onclick="pnNuevo()" style="margin-top:8px">Generar código</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>');
 }
 window.pnQ=function(v){PQ=String(v||'').trim();PM=20;if(LAST)pnShow(LAST)};
 window.pnMore=function(){PM+=20;if(LAST)pnShow(LAST)};
@@ -776,9 +788,10 @@ window.pnDev=function(id){var d=(LAST.lista||[]).filter(function(x){return x.id=
  var has=!!d.codigo;
  show('<h3>'+E(d.nombre||String(id).slice(0,5))+'</h3><div class="m">Código de app (toca para copiar)</div><div onclick="cpyK(\'i\')" style="font-size:18px;font-weight:700;text-align:center;padding:10px;margin:6px 0;border:1px dashed var(--b,#888);border-radius:12px;word-break:break-all">'+E(fid(id))+'</div>'
   +'<div class="m">v'+E(d.version)+' · hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros/7d</div><div class="m" style="margin:4px 0 10px">'+(has?'🔑 '+cstat({activado:d.activado,vence:d.vence}):'Sin código')+'</div>'
-  +'<button class="s" onclick="pnNom(\''+E(id)+'\')">✏️ Renombrar</button>'
+  +'<button class="s" onclick="pnEx(\''+E(id)+'\','+(d.exento?'false':'true')+')">🛡️ '+(d.exento?'Quitar exención (cliente normal)':'Marcar como mío (exento de límites)')+'</button><button class="s" onclick="pnNom(\''+E(id)+'\')" style="margin-top:8px">✏️ Renombrar</button>'
   +(has?'<button class="b" onclick="pnCodDev(\''+E(id)+'\')" style="margin-top:8px">🔑 Ver o copiar su código</button>':'<button class="b" onclick="pnGen(\''+E(id)+'\')" style="margin-top:8px">🔑 Generar código para este dispositivo</button>')
   +'<button class="s" onclick="pnBack()" style="margin-top:8px">Volver al panel</button>')};
+window.pnEx=async function(id,on){try{await call('panel_exento',{p_id:id,p_on:on})}catch(e){await say('No se pudo cambiar.')}reload()};
 window.pnCodDev=function(id){var d=(LAST.lista||[]).filter(function(x){return x.id==id})[0];if(d)cShow({codigo:d.codigo,cliente:d.nombre,dias:d.dias,activado:d.activado,vence:d.vence,anulado:false})};
 window.pnGen=async function(id){var d=await dlg({msg:'Días de validez (cuentan desde que se activa)',input:true,def:'30',ok:'Generar',cancel:'Cancelar'});d=parseInt(d,10);if(!(d>0))return;var x=(LAST.lista||[]).filter(function(y){return y.id==id})[0]||{};try{var code=await call('panel_crear_codigo',{p_cliente:id,p_dias:d});cShow({codigo:code,cliente:x.nombre,dias:d,activado:null,anulado:false})}catch(e){await say('No se pudo crear el código.');reload()}};
 async function reload(){try{pnShow(await rpc('panel_dispositivos',{p_clave:ld('inv_pk','')}))}catch(e){}}
