@@ -96,7 +96,7 @@ const wname=e=>((ld('inv2w',{})||{})[e&&e.id])||'',setWN=(id,n)=>{try{const o=ld
 const lg=(e,a)=>{if(!e||!wk(e))return;e.lg=e.lg||[];const w=wname(e)||'Trabajador',l=e.lg.filter(x=>x.w==w).sort((x,y)=>y.id-x.id)[0];if(l&&l.a==a&&Date.now()-Math.floor(l.id/100)<6e4)return;e.lg.push({id:nid(),w,a})};
 const seenOf=e=>((ld('inv2n',{})||{})[e.id])||0,unseen=e=>wk(e)?[]:(e.lg||[]).filter(x=>x.id>seenOf(e));
 const markSeen=e=>{try{const o=ld('inv2n',{})||{};o[e.id]=Math.max(0,...(e.lg||[]).map(x=>x.id));localStorage.setItem('inv2n',JSON.stringify(o))}catch(x){}};
-function news(){const m={};let n=0;D.est.forEach(e=>unseen(e).forEach(x=>{m[x.w]=(m[x.w]||0)+1;n++}));if(!n)return'';return' · '+n+' cambio(s) nuevo(s): '+Object.entries(m).map(([k,v])=>k+' ('+v+')').join(', ')+'. Míralos en ⋮ del local → Actividad.'}
+function news(){let n=0;D.est.forEach(e=>{if(!wk(e))n+=+(localStorage.getItem('inv_pend_'+e.id)||0)});return n?' · 👷 '+n+' trabajador'+(n>1?'es':'')+' esperando tu aprobación (⋮ del local → Trabajadores)':''}
 let acF='',acO={},acS0=0,acNm=[],acId=[];
 const acTm=t=>new Date(t).toLocaleString('es',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 function ac(){const e=gE();if(!e||wk(e))return;acF='';acO={};acS0=seenOf(e);markSeen(e);acR();r()}
@@ -282,12 +282,13 @@ function qrFile(ev){
 async function syncEst(e){
   stamp(e,false);
   for(let a=0;a<5;a++){
-    const rows=await rpc('get_est',{p_code:e.code});
+    const rows=await rpc('get_est2',{p_code:e.code,p_id:DID(),p_nombre:(wk(e)?wname(e):null)});
+    if(rows&&!Array.isArray(rows)&&rows.estado)throw new Error(rows.estado=='pendiente'?'El dueño debe aprobar este teléfono':'El dueño no permitió este teléfono');
     const row=Array.isArray(rows)&&rows.length?rows[0]:null,ver=row?Number(row.ver):0;
     if(row&&row.data&&row.data.id!=e.id){e.code=genCode();persist();continue}
     const mine=clean(e);delete mine.rol;
     const merged=clean(row&&row.data?mergeEst(mine,norm(row.data)):mine);delete merged.rol;if(row&&row.data)late(merged,mine,row.data);
-    const nv=await rpc('put_est',{p_code:e.code,p_data:merged,p_ver:ver});
+    const nv=await rpc('put_est2',{p_code:e.code,p_data:merged,p_ver:ver,p_id:DID()});
     if(Number(nv)<0)continue;
     const idx=D.est.findIndex(z=>z.id==e.id);if(idx<0)return false;
     const cur=D.est[idx],before=JSON.stringify(cur);
@@ -439,7 +440,8 @@ function procJoin(){
   const c=m[0];
   if(D.est.some(z=>z.code==c))return toast('Ya tienes este local en tu teléfono.');
   toast('Buscando el local…',20000);
-  withT(rpc('get_est',{p_code:c}),15000).then(rows=>{
+  withT(rpc('get_est2',{p_code:c,p_id:DID(),p_nombre:nm}),15000).then(rows=>{
+    if(rows&&!Array.isArray(rows)&&rows.estado)return toast(rows.estado=='pendiente'?'📨 Pedido enviado. Cuando el dueño te apruebe, vuelve a escanear el código.':'⛔ El dueño no permitió este teléfono.',9000);
     const remote=Array.isArray(rows)&&rows.length?rows[0].data:null;
     if(!remote)return toast('No se encontró ese código. El dueño debe sincronizar su local primero.',8000);
     if(D.est.some(z=>z.id==remote.id))return toast('Ya tienes este local en tu teléfono.');
@@ -448,7 +450,7 @@ function procJoin(){
   }).catch(err=>toast('❌ '+hint(err),9000));
 }
 function me(){const e=gE(),o=opn(e),w=wk(e),nu=w?0:unseen(e).length;if(!w&&e.code)setTimeout(()=>showQR(e.code),0);
-show(`<h3>${E(e.n)}</h3>${w?`<div class="m">Tu nombre: <b>${E(wname(e)||'sin nombre')}</b></div>${e.code?`<div class="m" style="margin-top:8px">${lastSync(e.code)}</div><button class="s" onclick="cm();syncOne('${e.id}')">🔄 Sincronizar este local</button>`:''}<button class="s" onclick="wnm()">Cambiar mi nombre</button><br>`:(e.code?`<div class="m">Código de sincronización: <b>${E(e.code)}</b></div><div id="qrc" style="text-align:center;margin:8px 0"></div><div class="m" style="margin-top:8px">${lastSync(e.code)}</div><button class="s" onclick="cm();syncOne('${e.id}')">🔄 Sincronizar este local</button><button class="s" onclick="ac()">👷 Actividad de trabajadores${nu?' ('+nu+' nuevos)':''}</button><br>`:`<button class="s" onclick="mkcode()">☁️ Activar sincronización (crear código)</button><br>`)}${o&&!w?'<button class="b" onclick="cm();cex()">📋 Contar existencia</button>':''}<button class="s" onclick="hc()">Registro</button><button class="s" onclick="rn()">Cambiar nombre</button>${w?'':'<button class="s" onclick="cr()">Rol: Dueño (cambiar)</button>'}<button class="s" onclick="de0()">Eliminar establecimiento</button><button class="s" onclick="cm()">Cerrar</button>`)}
+show(`<h3>${E(e.n)}</h3>${w?`<div class="m">Tu nombre: <b>${E(wname(e)||'sin nombre')}</b></div>${e.code?`<div class="m" style="margin-top:8px">${lastSync(e.code)}</div><button class="s" onclick="cm();syncOne('${e.id}')">🔄 Sincronizar este local</button>`:''}<button class="s" onclick="wnm()">Cambiar mi nombre</button><br>`:(e.code?`<div class="m">Código de sincronización: <b>${E(e.code)}</b></div><div id="qrc" style="text-align:center;margin:8px 0"></div><div class="m" style="margin-top:8px">${lastSync(e.code)}</div><button class="s" onclick="cm();syncOne('${e.id}')">🔄 Sincronizar este local</button><button class="s" onclick="ac()">👷 Trabajadores${pendTxt(e)}</button><br>`:`<button class="s" onclick="mkcode()">☁️ Activar sincronización (crear código)</button><br>`)}${o&&!w?'<button class="b" onclick="cm();cex()">📋 Contar existencia</button>':''}<button class="s" onclick="hc()">Registro</button><button class="s" onclick="rn()">Cambiar nombre</button>${w?'':'<button class="s" onclick="cr()">Rol: Dueño (cambiar)</button>'}<button class="s" onclick="de0()">Eliminar establecimiento</button><button class="s" onclick="cm()">Cerrar</button>`)}
 function mkcode(){const e=gE();e.code=genCode();sv();me()}
 async function cr(){const e=gE();if(wk(e))return;if(!await ask('¿Pasar a Trabajador? En este teléfono dejarás de ver costos, ganancia y el código del local, y no podrás volver a Dueño aquí.'))return;const n=((await prm('Tu nombre (el dueño verá quién hizo los cambios)',''))||'').trim();e.rol='t';if(n)setWN(e.id,n);sv();cm();r()}
 async function rn(){const e=gE(),n=await prm('Nombre del establecimiento',e.n);if(n&&n.trim()){e.n=n.trim();lg(e,'Cambió el nombre del local a "'+n.trim()+'"');sv();cm();r()}}
@@ -504,7 +506,7 @@ const curTh=()=>{try{const t=localStorage.getItem('inv2t');return TH.some(x=>x[0
 function setTheme(id){try{localStorage.setItem('inv2t',id)}catch(e){}if(id=='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',id);const m=document.querySelector('meta[name=theme-color]'),t=TH.find(x=>x[0]==id);if(m&&t)m.setAttribute('content',t[2]);th()}
 function th(){const c=curTh();show(`<h3>Cambiar tema</h3>`+TH.map(x=>`<div class="card" style="margin:8px 0;${x[0]==c?'border-color:var(--p)':''}" onclick="setTheme('${x[0]}')"><div class="row"><b>${x[0]==c?'✓ ':''}${x[1]}</b><span style="display:flex;gap:4px"><i style="width:18px;height:18px;border-radius:50%;background:${x[2]};border:1px solid var(--b)"></i><i style="width:18px;height:18px;border-radius:50%;background:${x[3]};border:1px solid var(--b)"></i><i style="width:18px;height:18px;border-radius:50%;background:${x[4]};border:1px solid var(--b)"></i></span></div></div>`).join('')+`<button class="s" onclick="cm()">Cerrar</button>`)}
 function mn(){show(`<h3>Opciones</h3><div class="m ${old()?'no':''}">${lb()?'Último respaldo: '+fd(lb()):'Aún no has guardado un respaldo'}</div><div class="m ${LSZ>3.5e6?'no':''}">Espacio usado: ${(LSZ/1e6).toFixed(1)} MB de ~5 MB</div><div class="m">${typeof licTxt==='function'?licTxt():''}</div><button class="s" onclick="cm();syncAll(false)">🔄 Sincronizar todos los locales</button><button class="s" onclick="cm();licAct()">🔑 Activar código</button><button class="s" onclick="th()">🎨 Cambiar tema</button><button class="b" onclick="guardar()">Guardar respaldo en Drive</button><label class="s" style="display:block;text-align:center;margin:8px 0 0">Restaurar desde respaldo<input type="file" accept=".json" onchange="imp(event)" hidden></label>${hp()?'<button class="s" onclick="undo()">Deshacer última restauración</button>':''}<button class="s" onclick="cm()">Cerrar</button>`)}
-const dump=()=>JSON.stringify({v:'inventario',D});
+const dump=()=>JSON.stringify({v:'inventario',D,did:(window.DID?DID():null)});
 function ex(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dump()],{type:'application/json'}));a.download='respaldo-inventario-'+td()+'.json';a.click();mkb();r();cm()}
 async function guardar(){const C=window.Capacitor,n='respaldo-inventario-'+td()+'.json';
 if(C&&C.isNativePlatform&&C.isNativePlatform()){try{const np=(a,b,o)=>C.Plugins&&C.Plugins[a]&&C.Plugins[a][b]?C.Plugins[a][b](o):C.nativePromise(a,b,o);
@@ -625,13 +627,15 @@ if(await ask('No se pudo guardar en el teléfono ('+m+').\n¿Quieres compartirlo
 return}
 const l=document.createElement('a');l.href=URL.createObjectURL(new Blob([o.bytes],{type:'application/pdf'}));l.download=fn;l.click()}
 const cnt=d=>d.est.reduce((s,e)=>s+e.pr.reduce((t,p)=>t+p.ps.length,0),0);
-function imp(e){const f=e.target.files[0];e.target.value='';if(!f)return;const R=new FileReader();R.onload=async()=>{try{const o=JSON.parse(R.result).D;if(!o||!Array.isArray(o.est))throw 0;o.est.forEach(z=>norm(z));
+function imp(e){const f=e.target.files[0];e.target.value='';if(!f)return;const R=new FileReader();R.onload=async()=>{try{const J=JSON.parse(R.result),o=J.D;if(!o||!Array.isArray(o.est))throw 0;o.est.forEach(z=>norm(z));
 const rs=`Respaldo: ${o.est.length} establecimientos y ${cnt(o)} productos.\nActual: ${D.est.length} establecimientos y ${cnt(D)} productos.\n\n`;
 const ch=await dlg({msg:rs+'Combinar agrega lo que falte y NO borra nada de lo actual (recomendado). Reemplazar deja solo lo que hay en el respaldo.',ok:'Combinar',alt:'Reemplazar',cancel:'Cancelar'});if(!ch)return;const mg=ch===true;
 if(!mg&&!await ask('¿Reemplazar todo lo actual por el respaldo? Se perderá lo que no esté en el respaldo (podrás deshacerlo).',{ok:'Reemplazar',danger:1}))return;
 try{localStorage.setItem('inv2p',JSON.stringify(D))}catch(x){}
 if(mg){o.est.forEach(e=>{const c=D.est.find(z=>z.id==e.id);if(!c)D.est.push(e);else e.pr.forEach(p=>{const q=c.pr.find(z=>z.id==p.id);if(!q)c.pr.push(p);else p.ps.forEach(x=>{if(!q.ps.some(z=>z.id==x.id))q.ps.push(x)})})});D.est.forEach(e=>e.pr.sort((a,b)=>b.start.localeCompare(a.start)))}else D=o;
-ce=null;cpid=null;sv();r();cm()}catch(x){say('Archivo no válido')}};R.readAsText(f)}
+ce=null;cpid=null;sv();r();cm();
+try{const bd=J.did;if(bd&&window.adoptDid&&/^[0-9a-f]{20}$/.test(bd)&&bd!==DID()&&await ask('Este respaldo es de otro teléfono. ¿Quieres que este teléfono tome su identidad (licencia y dueño de sus locales)? Recomendado si cambiaste de teléfono.',{ok:'Sí, tomar identidad'}))adoptDid(bd)}catch(x){}
+}catch(x){say('Archivo no válido')}};R.readAsText(f)}
 async function undo(){const p=ld('inv2p',null);if(!p||!await ask('¿Volver a los datos que tenías antes de la última restauración?'))return;D=p;ce=null;localStorage.removeItem('inv2p');sv();r();cm()}
 /* Pide el permiso de cámara al abrir la app (para escanear el QR). Si ya se concedió o se negó, no vuelve a molestar. */
 async function askCam(){
@@ -659,7 +663,7 @@ acs();
 r();setTimeout(askCam,1200);
 </script>
 <script>(function(){
-var APP_V=67,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=70,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -713,8 +717,23 @@ window.licGo=async function(){
  try{var r=await rpc('canjear_codigo',{p_id:did(),p_codigo:c});seen(r.hora);s('inv_lic',JSON.stringify({vence:r.vence}));cm();await say('Código activado. '+licTxt()+'.')}
  catch(e){var m=String(e&&e.message||'');await say(/usado/.test(m)?'Ese código ya fue usado en otro teléfono.':/anulado/.test(m)?'Ese código fue anulado.':/valido/.test(m)?'Código no válido. Revísalo.':'No se pudo activar. ¿Hay internet?')}
 };
+window.DID=did;
+window.adoptDid=function(id){s('inv_did',id);regd={};lastPing=0;setTimeout(ping,1000,true);toast('Listo: este teléfono tomó la identidad del respaldo',5000)};
+window.pendTxt=function(e){var n=+g('inv_pend_'+e.id)||0;return n?' ('+n+' pendiente'+(n>1?'s':'')+')':''};
+function wkBtn(t,cls,e,m,st){return'<button class="'+cls+'" style="width:auto;display:inline-block;padding:6px 14px;margin:6px 6px 0 0" onclick="wkSet(\''+e.id+'\',\''+m.dispositivo+'\',\''+st+'\')">'+t+'</button>'}
+function wkShow(e,L){
+ s('inv_pend_'+e.id,String(L.filter(function(x){return x.estado=='pendiente'}).length));
+ var rows=L.map(function(m){var nm=E(m.nombre||('Trabajador '+String(m.dispositivo).slice(0,5))),st=m.estado=='pendiente'?'⏳ pendiente':m.estado=='aprobado'?'✅ aprobado'+(m.auto?' (automático)':''):'⛔ denegado';
+  var b=m.estado=='pendiente'?wkBtn('Aprobar','b',e,m,'aprobado')+wkBtn('Denegar','s',e,m,'denegado'):m.estado=='aprobado'?wkBtn('Bloquear','s',e,m,'denegado'):wkBtn('Permitir','s',e,m,'aprobado');
+  return'<div class="it"><b>'+nm+'</b> · '+st+'<div class="m">visto hace '+ago(m.ultima)+'</div>'+b+'</div>'}).join('');
+ show('<h3>👷 Trabajadores</h3><div class="m" style="margin-bottom:6px">Solo los teléfonos aprobados entran a este local, aunque tengan el código.</div>'+(rows||'<div class="m" style="padding:14px 0">Aún no hay trabajadores. Cuando alguien escanee tu código, aparecerá aquí para que lo apruebes.</div>')+'<button class="s" onclick="cm()" style="margin-top:12px">Cerrar</button>');
+}
+window.ac=async function(){var e=gE();if(!e||wk(e)||!e.code)return;show('<h3>👷 Trabajadores</h3><div class="m">Cargando…</div>');
+ try{wkShow(e,await rpc('miembros_lista',{p_code:e.code,p_id:did()}))}catch(x){show('<h3>👷 Trabajadores</h3><div class="m">No se pudo cargar. ¿Hay internet?</div><button class="s" onclick="cm()">Cerrar</button>')}};
+window.wkSet=async function(eid,disp,st){var e=D.est.find(function(z){return z.id==eid});if(!e)return;
+ try{await rpc('miembro_set',{p_code:e.code,p_id:did(),p_disp:disp,p_estado:st});wkShow(e,await rpc('miembros_lista',{p_code:e.code,p_id:did()}))}catch(x){await say('No se pudo guardar. ¿Hay internet?')}};
 var regd={};
-function wkSync(){try{var own=[],wkc=[];D.est.forEach(function(e){if(!e.code)return;if(e.rol=='t')wkc.push(e.code);else if(e.rol=='d')own.push(e.code)});own.slice(0,20).forEach(function(c){if(regd[c])return;regd[c]=1;rpc('reg_dueno',{p_code:c,p_id:did()}).catch(function(){regd[c]=0})});if(wkc.length)rpc('est_estado',{p_codes:wkc.slice(0,20)}).then(function(x){if(x&&x.est){seen(x.hora);s('inv_wkl',JSON.stringify(x.est));try{window.r()}catch(e){}}}).catch(function(){})}catch(e){}}
+function wkSync(){try{var own=[],wkc=[];D.est.forEach(function(e){if(!e.code)return;if(e.rol=='t')wkc.push(e.code);else if(e.rol=='d')own.push(e.code)});own.slice(0,20).forEach(function(c){if(regd[c])return;regd[c]=1;rpc('reg_dueno2',{p_code:c,p_id:did()}).then(function(){return rpc('miembros_lista',{p_code:c,p_id:did()})}).then(function(L){var e=D.est.find(function(z){return z.code==c});if(e&&L)s('inv_pend_'+e.id,String(L.filter(function(x){return x.estado=='pendiente'}).length))}).catch(function(){regd[c]=0})});if(wkc.length)rpc('est_estado',{p_codes:wkc.slice(0,20)}).then(function(x){if(x&&x.est){seen(x.hora);s('inv_wkl',JSON.stringify(x.est));try{window.r()}catch(e){}}}).catch(function(){})}catch(e){}}
 function ping(f){
  if(!navigator.onLine||(!f&&Date.now()-lastPing<6e5))return;lastPing=Date.now();
  try{rpc('ping_dispositivo',{p_id:did(),p_version:AV,p_locales:D.est.length,p_productos:cnt(),p_uso7:uso7()}).then(function(r){
@@ -749,7 +768,7 @@ var taps=0,tt=0;
 document.addEventListener('click',function(ev){
  var h=ev.target&&ev.target.closest?ev.target.closest('h1'):null;
  if(!h||h.textContent.indexOf('Inventario')<0||h.textContent.indexOf('📦')<0)return;
- var n=Date.now();if(n-tt>5000)taps=0;tt=n;taps++;if(taps>=7){taps=0;panel()}
+ var n=Date.now();if(n-tt>5000)taps=0;tt=n;taps++;if(taps>=7){taps=0;VIEW='h';panel()}
 });
 function ago(t){var x=(Date.now()-new Date(t).getTime())/1000;if(!(x>=0))return'—';if(x<90)return'ahora';if(x<3600)return Math.round(x/60)+' min';if(x<86400)return Math.round(x/3600)+' h';return Math.round(x/86400)+' d'}
 async function call(fn,a){var k=ld('inv_pk','');a.p_clave=k;return rpc(fn,a)}
@@ -764,23 +783,45 @@ async function panel(){
    await say('No se pudo abrir el panel. ¿Hay internet?');return}
  }
 }
-var PQ='',PM=20;
+var PQ='',PM=20,VIEW='h';
 function fid(id){return String(id).match(/.{1,5}/g).join('-')}
 function chip(k,t){return'<button class="s" style="display:inline-block;width:auto;padding:6px 12px;margin:2px 4px 2px 0;'+(PF==k?'border-color:#fff':'')+'" onclick="pnFil(\''+k+'\')">'+t+'</button>'}
-function pnShow(r){
- LAST=r;var me=did(),q=PQ.toLowerCase().replace(/-/g,'');
- var L=(r.lista||[]).filter(function(d){var a=(Date.now()-new Date(d.ultima))/864e5;if(PF=='a'&&!(a<=7))return false;if(PF=='i'&&!(a>14))return false;if(PF=='v'&&!(d.version<AV))return false;if(PF=='s'&&d.codigo)return false;return !q||((d.nombre||'')+' '+d.id).toLowerCase().indexOf(q)>=0});
- var st=function(a,b){return'<div style="flex:1;text-align:center"><b style="font-size:21px">'+a+'</b><div class="m">'+b+'</div></div>'};
- var rows=L.slice(0,PM).map(function(d){var c=d.codigo?'🔑 '+cstat({activado:d.activado,vence:d.vence}):'sin código';return'<div class="it" onclick="pnDev(\''+E(d.id)+'\')"><b>'+E(d.nombre||String(d.id).slice(0,5))+'</b>'+(d.id==me?' · este teléfono':'')+(d.exento?' · 🛡️ exento':'')+'<div class="m">v'+E(d.version)+' · hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros/7d · '+E(d.locales)+' locales · '+E(d.productos)+' productos</div><div class="m">'+c+'</div></div>'}).join('');
- var U=(r.codigos||[]).map(function(c){return'<div class="it" onclick="pnCod(\''+E(c.codigo)+'\')"><b>'+E(c.codigo)+'</b> · '+E(c.cliente||'')+'<div class="m">'+c.dias+' días · sin usar</div></div>'}).join('');
+function fl(d,k){var n=Date.now(),D1=864e5,a=(n-new Date(d.ultima))/D1,act=d.codigo&&d.activado,v=act?new Date(d.vence).getTime():0;
+ switch(k){case'a':return a<=7;case'i':return a>14;case'v':return d.version<AV;case's':return !d.codigo;case'v7':return act&&v>n&&v-n<=7*D1;case'gr':return act&&v<=n&&v+3*D1>n;case've':return act&&v+3*D1<=n;case'ia':return act&&v>n&&a>14;default:return true}}
+var TT={t:'Todos',a:'Activos 7d',i:'Sin abrir 14d',v:'Versión vieja',s:'Sin código',v7:'Códigos por vencer (7 días)',gr:'En días de gracia',ve:'Código vencido',ia:'Con código y sin abrir 14 días'};
+function back(){return'<button class="s" onclick="pnGo(\'h\')" style="display:inline-block;width:auto;padding:6px 12px;margin-bottom:6px">← Volver</button>'}
+function pnShow(r){LAST=r;({h:vHome,l:vList,c:vCodes,s:vSet}[VIEW]||vHome)(r)}
+window.pnGo=function(v,f){VIEW=v;if(f)PF=f;if(v=='l'&&!f){PF='t'}PQ='';PM=20;if(LAST)pnShow(LAST)};
+function vHome(r){
+ var L=r.lista||[],st=function(a,b){return'<div style="flex:1;text-align:center"><b style="font-size:21px">'+a+'</b><div class="m">'+b+'</div></div>'};
+ var al=[['v7','🔑','vencen en 7 días'],['gr','⏳','en días de gracia'],['ve','⛔','con código vencido'],['ia','😴','con código y sin abrir 14 días']].map(function(x){var n=L.filter(function(d){return fl(d,x[0])}).length;return n?'<div class="it" onclick="pnGo(\'l\',\''+x[0]+'\')"><b>'+x[1]+' '+n+'</b> '+x[2]+' ›</div>':''}).join('');
+ var nu=(r.codigos||[]).length;
  show('<h3>📡 Panel de uso</h3><div class="row" style="margin:6px 0 10px">'+st(r.total,'dispositivos')+st(r.hoy,'hoy')+st(r.semana,'semana')+st(r.nuevos_semana,'nuevos')+'</div>'
   +'<div class="m">Versiones: '+E((r.versiones||[]).map(function(x){return'v'+x.v+': '+x.n}).join(' · ')||'—')+'</div>'
-  +'<input placeholder="Buscar nombre o código de app" value="'+E(PQ)+'" onchange="pnQ(this.value)" style="margin:8px 0">'
+  +(al?'<div class="m" style="margin:12px 0 2px"><b>Requiere atención</b></div>'+al:'<div class="m" style="margin:12px 0">Nada requiere atención ✅</div>')
+  +'<button class="s" onclick="pnGo(\'l\',\'t\')" style="margin-top:12px">👥 Dispositivos ('+r.total+')</button>'
+  +'<button class="s" onclick="pnGo(\'c\')" style="margin-top:8px">🔑 Códigos'+(nu?' ('+nu+' sin usar)':'')+'</button>'
+  +'<button class="s" onclick="pnGo(\'s\')" style="margin-top:8px">⚙️ Ajustes</button>'
+  +'<button class="b" onclick="pnNuevo()" style="margin-top:8px">Generar código</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>');
+}
+function vList(r){
+ var me=did(),q=PQ.toLowerCase().replace(/-/g,'');
+ var L=(r.lista||[]).filter(function(d){return fl(d,PF)&&(!q||((d.nombre||'')+' '+d.id).toLowerCase().indexOf(q)>=0)});
+ var rows=L.slice(0,PM).map(function(d){var c=d.codigo?'🔑 '+cstat({activado:d.activado,vence:d.vence}):'sin código';return'<div class="it" onclick="pnDev(\''+E(d.id)+'\')"><b>'+E(d.nombre||String(d.id).slice(0,5))+'</b>'+(d.id==me?' · este teléfono':'')+(d.exento?' · 🛡️ exento':'')+'<div class="m">v'+E(d.version)+' · hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros/7d · '+E(d.locales)+' locales · '+E(d.productos)+' productos</div><div class="m">'+c+'</div></div>'}).join('');
+ show(back()+'<h3>'+E(TT[PF]||'Dispositivos')+'</h3>'
+  +'<input placeholder="Buscar nombre o código de app" value="'+E(PQ)+'" onchange="pnQ(this.value)" style="margin:6px 0">'
   +'<div>'+chip('t','Todos')+chip('a','Activos 7d')+chip('i','Sin abrir 14d')+chip('v','Versión vieja')+chip('s','Sin código')+'</div>'
   +'<div class="m" style="margin:8px 0 0">'+L.length+' dispositivo'+(L.length==1?'':'s')+'</div>'+(rows||'<div class="m">Nada con ese filtro.</div>')
-  +(L.length>PM?'<button class="s" onclick="pnMore()" style="margin-top:8px">Ver más ('+(L.length-PM)+')</button>':'')
-  +(U?'<div class="m" style="margin:14px 0 2px"><b>Códigos sin usar</b></div>'+U:'')
-  +'<button class="s" onclick="pnAsc()" style="margin-top:12px">Probar como cliente: '+(g('inv_asc')?'ACTIVADO':'desactivado')+'</button><button class="s" onclick="pnLim()" style="margin-top:8px">Límites de prueba: '+(r.limites=='on'?'ENCENDIDOS':'apagados')+'</button><button class="b" onclick="pnNuevo()" style="margin-top:8px">Generar código</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>');
+  +(L.length>PM?'<button class="s" onclick="pnMore()" style="margin-top:8px">Ver más ('+(L.length-PM)+')</button>':''));
+}
+function vCodes(r){
+ var U=(r.codigos||[]).map(function(c){return'<div class="it" onclick="pnCod(\''+E(c.codigo)+'\')"><b>'+E(c.codigo)+'</b> · '+E(c.cliente||'')+'<div class="m">'+c.dias+' días · sin usar</div></div>'}).join('');
+ var A=(r.lista||[]).filter(function(d){return d.codigo}).sort(function(a,b){return new Date(a.vence||0)-new Date(b.vence||0)}).map(function(d){return'<div class="it" onclick="pnCodDev(\''+E(d.id)+'\')"><b>'+E(d.codigo)+'</b> · '+E(d.nombre||String(d.id).slice(0,5))+'<div class="m">'+d.dias+' días · '+cstat({activado:d.activado,vence:d.vence})+'</div></div>'}).join('');
+ show(back()+'<h3>🔑 Códigos</h3><div class="m" style="margin:4px 0 2px"><b>Sin usar</b></div>'+(U||'<div class="m">Ninguno.</div>')+'<div class="m" style="margin:12px 0 2px"><b>En dispositivos</b></div>'+(A||'<div class="m">Ninguno.</div>')+'<button class="b" onclick="pnNuevo()" style="margin-top:12px">Generar código</button>');
+}
+function vSet(r){
+ show(back()+'<h3>⚙️ Ajustes</h3><button class="s" onclick="pnLim()" style="margin-top:8px">Límites de prueba: '+(r.limites=='on'?'ENCENDIDOS':'apagados')+'</button><div class="m" style="margin:4px 0 12px">Encendidos: quien no tenga código vigente queda en modo prueba.</div>'
+  +'<button class="s" onclick="pnAsc()">Probar como cliente: '+(g('inv_asc')?'ACTIVADO':'desactivado')+'</button><div class="m" style="margin:4px 0">Ves tu app como la ve un cliente sin código, para comprobar los bloqueos.</div>');
 }
 window.pnQ=function(v){PQ=String(v||'').trim();PM=20;if(LAST)pnShow(LAST)};
 window.pnMore=function(){PM+=20;if(LAST)pnShow(LAST)};
