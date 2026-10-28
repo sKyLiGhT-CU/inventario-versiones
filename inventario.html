@@ -659,7 +659,7 @@ acs();
 r();setTimeout(askCam,1200);
 </script>
 <script>(function(){
-var APP_V=64,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=65,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -701,11 +701,12 @@ function lic(){try{return JSON.parse(g('inv_lic'))}catch(e){return null}}
 window.licTxt=function(){var l=lic();if(!l)return g('inv_lim')==='on'?'Prueba: 1 establecimiento y 5 productos':'Prueba sin límites';if(l.anulado)return'Código anulado';return l.vence>nowT()?'Código válido hasta '+fdt(l.vence):'Código vencido el '+fdt(l.vence)};
 var DUENO='5353186825';
 function idf(){return did().match(/.{1,5}/g).join('-')}
-function msgId(){return'Hola, quiero activar Inventario. Mi código de app: '+idf()+' (v'+AV+')'}
+function msgWA(){return'Hola, quiero activar Inventario (v'+AV+').\nMi código de app:\n```'+did()+'```'}
+function msgSMS(){return'Hola, quiero activar Inventario (v'+AV+'). Mi código de app: '+did()}
 function copyTxt(t){var ok=function(){toast('Copiado')};var fb=function(){try{var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();document.execCommand('copy');document.body.removeChild(a);ok()}catch(e){say('No se pudo copiar. Anótalo: '+t)}};try{navigator.clipboard.writeText(t).then(ok,fb)}catch(e){fb()}}
 window.licCopy=function(){copyTxt(idf())};
-window.licWA=function(){location.href='https://wa.me/'+DUENO+'?text='+encodeURIComponent(msgId())};
-window.licSMS=function(){location.href='sms:+'+DUENO+'?body='+encodeURIComponent(msgId())};
+window.licWA=function(){location.href='https://wa.me/'+DUENO+'?text='+encodeURIComponent(msgWA())};
+window.licSMS=function(){location.href='sms:+'+DUENO+'?body='+encodeURIComponent(msgSMS())};
 window.licAct=function(){show('<h3>🔑 Activar código</h3><div class="m">Tu código de app</div><div onclick="licCopy()" style="font-size:19px;font-weight:700;word-break:break-all;text-align:center;padding:12px;margin:6px 0 4px;border:1px dashed var(--b,#888);border-radius:12px">'+idf()+'</div><div class="m" style="margin-bottom:8px">Toca el código para copiarlo</div><div class="m" style="margin-bottom:6px">Envíaselo al dueño para que te dé tu código de acceso.</div><button class="s" onclick="licCopy()">📋 Copiar mi código</button><button class="s" onclick="licWA()">💬 Enviar por WhatsApp</button><button class="s" onclick="licSMS()">✉️ Enviar por SMS</button><div class="m" style="margin:14px 0 6px">¿Ya tienes tu código de acceso?</div><input id="lcin" placeholder="L-XXXXX-XXXXX" autocapitalize="characters" autocomplete="off"><button class="b" onclick="licGo()" style="margin-top:8px">Activar</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>')};
 window.licGo=async function(){
  var c=(G('lcin').value||'').trim();if(!c)return;
@@ -751,18 +752,35 @@ async function panel(){
    await say('No se pudo abrir el panel. ¿Hay internet?');return}
  }
 }
+var PQ='',PM=20;
+function fid(id){return String(id).match(/.{1,5}/g).join('-')}
+function chip(k,t){return'<button class="s" style="display:inline-block;width:auto;padding:6px 12px;margin:2px 4px 2px 0;'+(PF==k?'border-color:#fff':'')+'" onclick="pnFil(\''+k+'\')">'+t+'</button>'}
 function pnShow(r){
- LAST=r;var me=did(),L=(r.lista||[]).filter(function(d){var a=(Date.now()-new Date(d.ultima))/864e5;return PF=='a'?a<=7:PF=='i'?a>14:PF=='v'?d.version<AV:true});
- var row=function(a,b){return'<div class="row it"><span>'+a+'</span><b>'+b+'</b></div>'};
- var fb=function(k,t){return'<button class="s" style="'+(PF==k?'border-color:var(--a,#fff)':'')+';padding:6px 10px;margin:2px" onclick="pnFil(\''+k+'\')">'+t+'</button>'};
- var C=(r.codigos||[]).map(function(c){var st=c.anulado?'anulado':!c.activado?'sin usar':new Date(c.vence)>new Date()?'activo hasta '+fdt(new Date(c.vence)):'vencido';return'<div class="it" onclick="pnCod(\''+E(c.codigo)+'\')"><b>'+E(c.codigo)+'</b> · '+E(c.cliente||'')+'<div class="m">'+c.dias+' días · '+st+'</div></div>'}).join('');
- show('<h3>📡 Panel de uso</h3>'+row('Dispositivos',r.total)+row('Abrieron hoy',r.hoy)+row('Esta semana',r.semana)+row('Este mes',r.mes)+row('Nuevos esta semana',r.nuevos_semana)
-  +'<div class="m" style="margin:8px 0">Versiones: '+E((r.versiones||[]).map(function(x){return'v'+x.v+': '+x.n}).join(' · ')||'—')+'</div>'
-  +'<div style="margin:6px 0">'+fb('t','Todos')+fb('a','Activos 7d')+fb('i','Sin abrir 14d')+fb('v','Versión vieja')+'</div>'
-  +L.map(function(d){return'<div class="it" onclick="pnNom(\''+E(d.id)+'\')"><b>'+E(d.nombre||String(d.id).slice(0,5))+'</b>'+(d.id==me?' · este teléfono':'')+'<div class="m">v'+E(d.version)+' · visto hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros en 7 días · '+E(d.locales)+' locales · '+E(d.productos)+' productos</div></div>'}).join('')
-  +'<div class="m" style="margin:12px 0 2px"><b>Códigos</b></div>'+(C||'<div class="m">Aún no hay códigos.</div>')
-  +'<button class="s" onclick="pnLim()" style="margin-top:10px">Límites de prueba: '+(r.limites=='on'?'ENCENDIDOS':'apagados')+'</button><button class="b" onclick="pnNuevo()" style="margin-top:8px">Generar código</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>');
+ LAST=r;var me=did(),q=PQ.toLowerCase().replace(/-/g,'');
+ var L=(r.lista||[]).filter(function(d){var a=(Date.now()-new Date(d.ultima))/864e5;if(PF=='a'&&!(a<=7))return false;if(PF=='i'&&!(a>14))return false;if(PF=='v'&&!(d.version<AV))return false;if(PF=='s'&&d.codigo)return false;return !q||((d.nombre||'')+' '+d.id).toLowerCase().indexOf(q)>=0});
+ var st=function(a,b){return'<div style="flex:1;text-align:center"><b style="font-size:21px">'+a+'</b><div class="m">'+b+'</div></div>'};
+ var rows=L.slice(0,PM).map(function(d){var c=d.codigo?'🔑 '+cstat({activado:d.activado,vence:d.vence}):'sin código';return'<div class="it" onclick="pnDev(\''+E(d.id)+'\')"><b>'+E(d.nombre||String(d.id).slice(0,5))+'</b>'+(d.id==me?' · este teléfono':'')+'<div class="m">v'+E(d.version)+' · hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros/7d · '+E(d.locales)+' locales · '+E(d.productos)+' productos</div><div class="m">'+c+'</div></div>'}).join('');
+ var U=(r.codigos||[]).map(function(c){return'<div class="it" onclick="pnCod(\''+E(c.codigo)+'\')"><b>'+E(c.codigo)+'</b> · '+E(c.cliente||'')+'<div class="m">'+c.dias+' días · sin usar</div></div>'}).join('');
+ show('<h3>📡 Panel de uso</h3><div class="row" style="margin:6px 0 10px">'+st(r.total,'dispositivos')+st(r.hoy,'hoy')+st(r.semana,'semana')+st(r.nuevos_semana,'nuevos')+'</div>'
+  +'<div class="m">Versiones: '+E((r.versiones||[]).map(function(x){return'v'+x.v+': '+x.n}).join(' · ')||'—')+'</div>'
+  +'<input placeholder="Buscar nombre o código de app" value="'+E(PQ)+'" onchange="pnQ(this.value)" style="margin:8px 0">'
+  +'<div>'+chip('t','Todos')+chip('a','Activos 7d')+chip('i','Sin abrir 14d')+chip('v','Versión vieja')+chip('s','Sin código')+'</div>'
+  +'<div class="m" style="margin:8px 0 0">'+L.length+' dispositivo'+(L.length==1?'':'s')+'</div>'+(rows||'<div class="m">Nada con ese filtro.</div>')
+  +(L.length>PM?'<button class="s" onclick="pnMore()" style="margin-top:8px">Ver más ('+(L.length-PM)+')</button>':'')
+  +(U?'<div class="m" style="margin:14px 0 2px"><b>Códigos sin usar</b></div>'+U:'')
+  +'<button class="s" onclick="pnLim()" style="margin-top:12px">Límites de prueba: '+(r.limites=='on'?'ENCENDIDOS':'apagados')+'</button><button class="b" onclick="pnNuevo()" style="margin-top:8px">Generar código</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>');
 }
+window.pnQ=function(v){PQ=String(v||'').trim();PM=20;if(LAST)pnShow(LAST)};
+window.pnMore=function(){PM+=20;if(LAST)pnShow(LAST)};
+window.pnDev=function(id){var d=(LAST.lista||[]).filter(function(x){return x.id==id})[0];if(!d)return;CP.i=id;
+ var has=!!d.codigo;
+ show('<h3>'+E(d.nombre||String(id).slice(0,5))+'</h3><div class="m">Código de app (toca para copiar)</div><div onclick="cpyK(\'i\')" style="font-size:18px;font-weight:700;text-align:center;padding:10px;margin:6px 0;border:1px dashed var(--b,#888);border-radius:12px;word-break:break-all">'+E(fid(id))+'</div>'
+  +'<div class="m">v'+E(d.version)+' · hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros/7d</div><div class="m" style="margin:4px 0 10px">'+(has?'🔑 '+cstat({activado:d.activado,vence:d.vence}):'Sin código')+'</div>'
+  +'<button class="s" onclick="pnNom(\''+E(id)+'\')">✏️ Renombrar</button>'
+  +(has?'<button class="b" onclick="pnCodDev(\''+E(id)+'\')" style="margin-top:8px">🔑 Ver o copiar su código</button>':'<button class="b" onclick="pnGen(\''+E(id)+'\')" style="margin-top:8px">🔑 Generar código para este dispositivo</button>')
+  +'<button class="s" onclick="pnBack()" style="margin-top:8px">Volver al panel</button>')};
+window.pnCodDev=function(id){var d=(LAST.lista||[]).filter(function(x){return x.id==id})[0];if(d)cShow({codigo:d.codigo,cliente:d.nombre,dias:d.dias,activado:d.activado,vence:d.vence,anulado:false})};
+window.pnGen=async function(id){var d=await dlg({msg:'Días de validez (cuentan desde que se activa)',input:true,def:'30',ok:'Generar',cancel:'Cancelar'});d=parseInt(d,10);if(!(d>0))return;var x=(LAST.lista||[]).filter(function(y){return y.id==id})[0]||{};try{var code=await call('panel_crear_codigo',{p_cliente:id,p_dias:d});cShow({codigo:code,cliente:x.nombre,dias:d,activado:null,anulado:false})}catch(e){await say('No se pudo crear el código.');reload()}};
 async function reload(){try{pnShow(await rpc('panel_dispositivos',{p_clave:ld('inv_pk','')}))}catch(e){}}
 window.pnLim=async function(){var on=!(LAST&&LAST.limites=='on');if(!(await ask(on?'¿Encender los límites? Quien no tenga un código válido quedará en modo prueba (1 establecimiento y 5 productos). Se aplica cuando cada teléfono se conecte.':'¿Apagar los límites? Todos vuelven a usar la app sin restricciones.',{ok:on?'Encender':'Apagar',danger:on})))return;try{await call('panel_limites',{p_on:on})}catch(e){await say('No se pudo cambiar.')}reload()};
 window.pnFil=function(k){PF=k;if(LAST)pnShow(LAST)};
@@ -775,7 +793,7 @@ function cShow(c){
  show('<h3>🔑 Código</h3><div class="m">Toca el código para copiarlo</div><div onclick="cpyK(\'c\')" style="font-size:22px;font-weight:700;text-align:center;padding:12px;margin:8px 0;border:1px dashed var(--b,#888);border-radius:12px;word-break:break-all">'+E(c.codigo)+'</div><div class="m">'+E(c.cliente||'')+' · '+c.dias+' días · '+cstat(c)+'</div><button class="b" onclick="cpyK(\'m\')" style="margin-top:10px">📋 Copiar mensaje para el cliente</button><button class="s" onclick="pnAnu(\''+E(c.codigo)+'\')" style="margin-top:8px">Anular código</button><button class="s" onclick="pnBack()" style="margin-top:8px">Volver al panel</button>')
 }
 window.pnBack=function(){reload()};
-window.pnNuevo=async function(){var c=await dlg({msg:'Cliente (nombre)',input:true,ok:'Siguiente',cancel:'Cancelar'});if(c===null||c===false||c===undefined)return;var d=await dlg({msg:'Días de validez (cuentan desde que se activa)',input:true,def:'30',ok:'Generar',cancel:'Cancelar'});d=parseInt(d,10);if(!(d>0))return;try{var code=await call('panel_crear_codigo',{p_cliente:String(c).trim(),p_dias:d});cShow({codigo:code,cliente:String(c).trim(),dias:d,activado:null,anulado:false})}catch(e){await say('No se pudo crear el código.');reload()}};
+window.pnNuevo=async function(){var c=await dlg({msg:'Código de app del cliente (o su nombre)',input:true,ok:'Siguiente',cancel:'Cancelar'});if(c===null||c===false||c===undefined)return;var d=await dlg({msg:'Días de validez (cuentan desde que se activa)',input:true,def:'30',ok:'Generar',cancel:'Cancelar'});d=parseInt(d,10);if(!(d>0))return;try{var code=await call('panel_crear_codigo',{p_cliente:String(c).trim(),p_dias:d});cShow({codigo:code,cliente:String(c).trim(),dias:d,activado:null,anulado:false})}catch(e){await say('No se pudo crear el código.');reload()}};
 window.pnCod=function(code){var c=(LAST&&LAST.codigos||[]).filter(function(x){return x.codigo==code})[0];if(c)cShow(c)};
 window.pnAnu=async function(code){if(!(await ask('¿Anular el código '+code+'?',{ok:'Anular',danger:true})))return;try{await call('panel_anular',{p_codigo:code})}catch(e){await say('No se pudo anular.')}reload()};
 })();
