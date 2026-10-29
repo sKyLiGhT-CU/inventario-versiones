@@ -140,7 +140,7 @@ x.en=sL(x.en,y=>{if(!SDT(y.f))y.f=td();sN(y,'q');sN(y,'c');sN(y,'p');sN(y,'pt');
 const vs=y=>{sN(y,'q');sN(y,'p');sN(y,'ts');sS(y,'w',80);sS(y,'nt',200);if(y.q==null)y.q=0};
 x.vr=sL(x.vr,vs);if(x.vx!=null)x.vx=sL(x.vx,vs);
 if(x.pc!=null)x.pc=sL(x.pc,y=>{sN(y,'ts');sN(y,'p');sS(y,'w',80)})})});
-e.fd=sL(e.fd,q=>{sS(q,'c',80);sS(q,'d',200);sS(q,'w',80);sN(q,'m');sN(q,'ts');if(typeof q.c!='string')q.c='';if(q.m==null)q.m=0});
+e.fd=sL(e.fd,q=>{sS(q,'c',80);sS(q,'d',200);sS(q,'w',80);sN(q,'m');sN(q,'ts');if(typeof q.c!='string')q.c='';if(q.m==null||Math.abs(q.m)>1e9)q.m=0});
 e.lg=(Array.isArray(e.lg)?e.lg:[]).filter(x=>x&&typeof x=='object'&&typeof x.id=='number'&&isFinite(x.id)).map(x=>{sS(x,'w',80);sS(x,'a',600);if(typeof x.w!='string')x.w='';if(typeof x.a!='string')x.a='';sN(x,'t');sS(x,'_h',3000);return x});
 return e}
 function norm(e){if(!e)return e;san(e);if(!Array.isArray(e.pr))e.pr=[];if(!Array.isArray(e.dl))e.dl=[];if(!Array.isArray(e.lg))e.lg=[];e.pr.forEach(p=>{if(!Array.isArray(p.ps))p.ps=[];p.ps.forEach(x=>{if(!Array.isArray(x.en))x.en=[];if(!Array.isArray(x.vr))x.vr=[];if(x.vv!=null){if(!x.vr.some(z=>String(z.id)=='m'+x.id)&&!(e.dl||[]).includes('m'+x.id))x.vr.push({id:'m'+x.id,q:+x.vv||0,w:'',ts:0});x.vv=null}})});return e}
@@ -327,9 +327,10 @@ function invSaveMin(id){try{const p=gp(id),e=gE(),el=G('f6');if(!p||!e||!el)retu
 function invSF(c){if(!SF)return true;try{const e=gE(),o=e&&opn(e),n=c.getAttribute('data-n'),x=o&&o.ps.find(z=>fz(z.n)==n),st=x?invState(x):'';return SF=='a'?st=='a':st!=''}catch(e){return true}}
 function invSet(v){SF=SF==v?'':v;r()}
 function invChips(e,p){let b=0,a=0;p.ps.forEach(x=>{const t=invState(x);if(t)b++;if(t=='a')a++});const c=(k,t)=>'<button class="'+(SF==k?'b':'s')+'" style="margin:0;padding:6px 12px;font-size:13px;width:auto" onclick="invSet(\''+k+'\')">'+t+'</button>';return '<div style="display:flex;gap:6px;margin:8px 12px 0;flex-wrap:wrap">'+c('b','⚠️ Bajo stock ('+b+')')+c('a','🚫 Agotados ('+a+')')+'</div>'}
-const fdBal=e=>{const m=new Map();(e.fd||[]).forEach(x=>{const k=fz(x.c),o=m.get(k)||{k,c:x.c,b:0,L:[]};o.b+=+x.m||0;o.L.push(x);m.set(k,o)});return[...m.values()]};
+const fdBal=e=>{const m=new Map();(e.fd||[]).forEach(x=>{const k=fz(x.c),o=m.get(k)||{k,c:x.c,b:0,L:[]};o.b+=+x.m||0;o.L.push(x);m.set(k,o)});return[...m.values()].map(o=>(o.b=Math.round(o.b*100)/100,o))};
 const fdTot=e=>fdBal(e).reduce((a,o)=>a+(o.b>0.005?o.b:0),0);
 const fdBtn=e=>(e.fd||[]).length?'<button class="s" onclick="fdv()">💳 Por cobrar · '+$(fdTot(e))+'</button>':'';
+const ljn=()=>{try{return localStorage.getItem('inv2jn')||''}catch(e){return ''}};
 const fdK=k=>encodeURIComponent(k).replace(/'/g,'%27');
 function fdv(){const e=gE();if(!e)return;const L=fdBal(e).filter(o=>o.b>0.005).sort((a,b)=>b.b-a.b);show('<h3>💳 Por cobrar</h3>'+(L.length?L.map(o=>'<div class="row it" onclick="fdc(\''+fdK(o.k)+'\')"><span>'+E(o.c)+'</span><b class="no">'+$(o.b)+'</b></div>').join('')+'<div class="row" style="margin-top:8px"><b>Total</b><b>'+$(fdTot(e))+'</b></div>':'<div class="m">Nadie te debe nada.</div>')+'<button class="s" onclick="cm()">Cerrar</button>')}
 function fdc(k){k=decodeURIComponent(k);const e=gE(),o=e&&fdBal(e).find(z=>z.k==k);if(!o)return fdv();const L=o.L.slice().sort((a,b)=>(b.ts||0)-(a.ts||0));show('<h3>'+E(o.c)+'</h3><div class="m">Debe: <b>'+$(Math.max(0,o.b))+'</b></div>'+L.map(x=>'<div class="row it" onclick="fdd(\''+x.id+'\')"><span>'+(x.m<0?'Abono':E(x.d||'Fiado'))+'<div class="m">'+(x.ts?new Date(x.ts).toLocaleDateString('es'):'')+(x.w?' · '+E(x.w):'')+'</div></span><b class="'+(x.m<0?'ok':'')+'">'+(x.m<0?'−':'')+$(Math.abs(x.m))+'</b></div>').join('')+(o.b>0.005?'<button class="b" onclick="fda(\''+fdK(k)+'\')">Cobrar / abonar</button>':'')+'<button class="s" onclick="fdv()">Volver</button>')}
@@ -464,15 +465,15 @@ ${A.st>0?`<div class="row it"><span>📦 Mercancía que te queda (al costo)</spa
 <button class="b" style="margin-top:8px" onclick="exportIPV()">📥 Exportar IPV a PDF</button>
 <button class="s" onclick="cm()">Cerrar</button>`)}
 let NR='d';
-function nr(v){NR=v;stopQR();neR()}
+function nr(v){const f=G('f1'),j=G('jn'),t=((f&&f.value)||(j&&j.value)||'');NR=v;stopQR();neR();const f2=G('f1'),j2=G('jn');if(f2&&t)f2.value=t;if(j2&&t)j2.value=t}
 function ne(){NR='d';neR()}
 function neR(){const t=NR=='t';
-  show(`<h3>Nuevo establecimiento</h3><div class="m">Tu rol aquí</div><div class="chips"><button class="chip${t?'':' on'}" onclick="nr('d')">Dueño</button><button class="chip${t?' on':''}" onclick="nr('t')">Trabajador</button></div>`+(t?`<input id="jn" placeholder="Tu nombre (ej: Ana)" autocapitalize="words" maxlength="30"><button class="b" onclick="scanQR()">📷 Escanear código QR</button><div id="qrv"></div><label class="s" style="display:block;text-align:center;margin:8px 0 0">Elegir foto del QR<input type="file" accept="image/*" onchange="qrFile(event)" hidden></label><input id="jc" placeholder="O escribe el código (INV-…)" autocapitalize="characters" style="margin-top:10px"><button class="b" onclick="procJoin()">Unirme</button>`:`<input id="f1" placeholder="Nombre (bar, kiosco, kiosco boulevard...)"><button class="b" onclick="se0()">Agregar</button>`)+`<button class="s" onclick="cm()">Cancelar</button>`)}
+  show(`<h3>Nuevo establecimiento</h3><div class="m">Tu rol aquí</div><div class="chips"><button class="chip${t?'':' on'}" onclick="nr('d')">Dueño</button><button class="chip${t?' on':''}" onclick="nr('t')">Trabajador</button></div>`+(t?`<input id="jn" placeholder="Tu nombre (ej: Ana)" autocapitalize="words" maxlength="30" value="${E(ljn())}"><button class="b" onclick="scanQR()">📷 Escanear código QR</button><div id="qrv"></div><label class="s" style="display:block;text-align:center;margin:8px 0 0">Elegir foto del QR<input type="file" accept="image/*" onchange="qrFile(event)" hidden></label><input id="jc" placeholder="O escribe el código (INV-…)" autocapitalize="characters" style="margin-top:10px"><button class="b" onclick="procJoin()">Unirme</button>`:`<input id="f1" placeholder="Nombre (bar, kiosco, kiosco boulevard...)"><button class="b" onclick="se0()">Agregar</button>`)+`<button class="s" onclick="cm()">Cancelar</button>`)}
 function se0(){const n=G('f1').value.trim();if(!n)return;D.est.push({id:nid(),n,rol:'d',code:genCode(),pr:[]});sv();cm();r()}
 function procJoin(){
   const j=G('jc'),m=String(j?j.value:'').toUpperCase().match(/INV-\d{6,10}/);
   if(!m)return toast('Escribe o escanea un código válido (empieza con INV-).');
-  const nm=(G('jn')||{value:''}).value.trim();if(!nm)return toast('Escribe tu nombre primero.');
+  const nm=(G('jn')||{value:''}).value.trim();if(!nm)return toast('Escribe tu nombre primero.');try{localStorage.setItem('inv2jn',nm)}catch(e){}
   const c=m[0];
   if(D.est.some(z=>z.code==c))return toast('Ya tienes este local en tu teléfono.');
   toast('Buscando el local…',20000);
@@ -563,7 +564,9 @@ const w=pwin(g,a,b,inc),s0=pstock(g,pa),s1=pstock(g,b),F=g.L[0],last=g.L[g.L.len
 let ini=s0.q;if(F.p.start>=a&&F.p.start<=b)ini+=(F.x.en||[]).filter(y=>y.i&&y.q>0).reduce((s,y)=>s+y.q,0);
 const fin=s1.q,aj=Math.round(w.aj*1e6)/1e6,tr=Math.round(w.tr*1e6)/1e6,ent=Math.round((fin-ini-aj+w.v+tr)*1e6)/1e6;
 if(!(w.v>0||ini>1e-9||fin>1e-9||Math.abs(ent)>1e-9||Math.abs(aj)>1e-9||Math.abs(tr)>1e-9))return;
-rows.push({key:e.id+'|'+g.nk,l:e.n,n:g.n,ini,ent,aj,tr,tot:ini+ent+aj,fin,v:w.v,np:curPrice(last.x),imp:w.imp,cos:w.cos,g:w.imp-w.cos,pb:w.pb,days:w.days})})});
+rows.push({key:e.id+'|'+g.nk,l:e.n,n:g.n,ini,ent,aj,tr,tot:ini+ent+aj,fin,v:w.v,np:curPrice(last.x),imp:w.imp,cos:w.cos,g:w.imp-w.cos,pb:w.pb,days:w.days})});
+const FM=new Map();[...e.pr].sort((x,y)=>(x.start||'').localeCompare(y.start||'')).forEach(p=>{if((p.start||'')>b||(p.end||'9999-12-31')<a)return;p.ps.forEach(x=>{if(!x.fis)return;const nk=x.n.trim().toLowerCase();if(pf&&nk!=pf)return;FM.set(nk,x)})});
+FM.forEach((x,nk)=>{const en=(x.en||[]).filter(y=>y.q>0),ini=en.filter(y=>y.i||(y.f||'')<a).reduce((s,y)=>s+y.q,0),ent=en.filter(y=>!y.i&&(y.f||'')>=a&&(y.f||'')<=b).reduce((s,y)=>s+y.q,0),tot=ini+ent,fin=x.fin!=null&&isFinite(+x.fin)?+x.fin:tot;if(!(tot>1e-9||fin>1e-9))return;rows.push({key:e.id+'|'+nk,l:e.n,n:x.n.trim()+' (conteo)',ini,ent,aj:0,tr:0,tot,fin,v:0,np:0,imp:0,cos:0,g:0,pb:new Map(),days:[]})})});
 return rows}
 
 /* ===== Exportar IPV a PDF · hoja Carta 216 x 279 mm (612 x 792 pt) ===== */
@@ -711,7 +714,7 @@ acs();
 r();setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script>(function(){
-var APP_V=77,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=78,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
