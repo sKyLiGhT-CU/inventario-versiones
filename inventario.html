@@ -105,11 +105,11 @@ function acW(i){acF=i<0?'':(acNm[i]||'');acO={};acR()}
 function acR(){const e=gE();if(!e||wk(e))return;
 const L=[...(e.lg||[])].sort((a,b)=>b.id-a.id).slice(0,300),T=id=>Math.floor(id/100);
 acNm=[...new Set(L.map(x=>x.w))];
-const ps=e.pr.map(p=>({p,t:T(p.id)>1e11?T(p.id):new Date(p.start+'T00:00').getTime()})).sort((a,b)=>b.t-a.t),G2={};
-L.filter(x=>!acF||x.w==acF).forEach(x=>{const q=ps.find(z=>z.t<=T(x.id))||ps[ps.length-1];if(!q)return;(G2[q.p.id]=G2[q.p.id]||[]).push(x)});
+const ds=[...new Set(L.map(x=>iso(new Date(T(x.id)))))].sort().reverse(),ps=ds.map(d=>({p:{id:d,start:d,end:d},t:0})),G2={};
+L.filter(x=>!acF||x.w==acF).forEach(x=>{const d=iso(new Date(T(x.id)));(G2[d]=G2[d]||[]).push(x)});
 acId=[];let h='';
 ps.forEach(z=>{const xs=G2[z.p.id];if(!xs)return;const i=acId.length;acId.push(z.p.id);const open=acO[z.p.id]===undefined?i==0:acO[z.p.id],p=z.p,ws=[...new Set(xs.map(x=>x.w))],nw=xs.some(x=>x.id>acS0);
-h+=`<div class="card ${p.end?'a-m':'a-ok'}" style="margin:8px 0" onclick="acT(${i})"><div class="row"><b>${nw?'<span class="no">●</span> ':''}Registro ${fd(p.start)}${p.end&&p.end!=p.start?' – '+fd(p.end):''}${p.end?'':' · en curso'}</b><span class="m">${open?'▲':'▼'}</span></div><div class="m">${ws.length} trabajador${ws.length>1?'es':''} · ${xs.length} registro${xs.length>1?'s':''} · último ${acTm(T(xs[0].id))}</div>`;
+h+=`<div class="card ${p.end?'a-m':'a-ok'}" style="margin:8px 0" onclick="acT(${i})"><div class="row"><b>${nw?'<span class="no">●</span> ':''}${fd(p.start)}${p.start==td()?' · hoy':''}</b><span class="m">${open?'▲':'▼'}</span></div><div class="m">${ws.length} trabajador${ws.length>1?'es':''} · ${xs.length} registro${xs.length>1?'s':''} · último ${acTm(T(xs[0].id))}</div>`;
 if(open){ws.forEach(w=>{const ys=xs.filter(x=>x.w==w),sl={},ot=[];[...ys].reverse().forEach(x=>{const m=/^Registró ([\d.,]+) vendidas de "(.*)"$/.exec(x.a);if(m)sl[m[2]]=(sl[m[2]]||0)+(parseFloat(m[1].replace(/,/g,''))||0);else ot.push(x)});ot.reverse();
 const ev=ot.map(x=>`<div class="m">${/^Terminó/.test(x.a)?'🏁':/^Se unió/.test(x.a)?'👋':'•'} ${E(x.a)} <span style="opacity:.7">· ${acTm(T(x.id))}</span></div>`).join(''),sk=Object.entries(sl);
 h+=`<div style="border-top:1px solid var(--b);margin-top:10px;padding-top:8px"><div class="row"><b>${ys.some(x=>x.id>acS0)?'<span class="no">●</span> ':''}${E(w)}</b><span class="m">${acTm(T(ys[0].id))}</span></div>${sk.length?'<div style="margin-top:4px">🛒 '+sk.map(([k,v])=>E(k)+' <b>'+un(v)+'</b>').join(' · ')+'</div>':''}${ev}</div>`})}
@@ -495,7 +495,12 @@ async function cr(){const e=gE();if(wk(e))return;if(!await ask('¿Pasar a Trabaj
 async function rn(){const e=gE(),n=await prm('Nombre del establecimiento',e.n);if(n&&n.trim()){e.n=n.trim();lg(e,'Cambió el nombre del local a "'+n.trim()+'"');sv();cm();r()}}
 async function de0(){{const t=await dlg({msg:'Se borrará este establecimiento con todos sus productos y registros. No se puede deshacer. Escribe BORRAR para confirmar.',input:1,def:'',ok:'Eliminar',cancel:'Cancelar',danger:1});if(String(t||'').trim().toUpperCase()!=='BORRAR'){if(t!=null)say('No se eliminó: debías escribir BORRAR.');return}}D.est=D.est.filter(z=>z.id!=ce);sv();cm();ce=null;cpid=null;pst=[];r()}
 function vc(id){const a=cpid==null?'':String(cpid),b=id==null?'':String(id);if(a!=b){pst.push(cpid);cpid=id}cm();r()}
-function hc(){const e=gE();show(`<h3>Registro de ${E(e.n)}</h3>`+e.pr.filter(p=>p.end||hasSales(p)).map(p=>{const s=sum(p);return`<div class="card" style="margin:8px 0" onclick="vc(${p.id==(opn(e)||e.pr[0]).id?'null':`'${p.id}'`})"><div class="row"><b>${fd(p.start)}${p.end?' – '+fd(p.end):' · en curso'}</b><b class="${!wk(e)&&s.g<0?'no':'ok'}">${$(wk(e)?s.v:s.g)}</b></div><div class="m">${p.ps.length} productos${whoNames(p)}</div></div>`}).join('')+`<button class="s" onclick="cm()">Cerrar</button>`)}
+function hc(){const e=gE();if(!e)return;const GP=pinst(e),ds=new Set();
+e.pr.forEach(p=>p.ps.forEach(x=>[...(x.vr||[]),...(x.vx||[])].forEach(z=>{if(z.ts>0&&!z.tr&&!z.aj)ds.add(iso(new Date(z.ts)))})));
+const L=[...ds].sort().reverse().slice(0,60).map(d=>{let v=0,c=0,u=0,n=0;GP.forEach(g=>{const w=pwin(g,d,d,false);v+=w.imp;c+=w.cos;u+=w.v;if(w.v>0)n++});return{d,v,g:v-c,u,n}}).filter(o=>o.u>0||o.v),w=wk(e);
+show(`<h3>Registro de ${E(e.n)}</h3>`+(L.length?L.map(o=>`<div class="card" style="margin:8px 0"${w?'':` onclick="rgDay('${o.d}')"`}><div class="row"><b>${fd(o.d)}${o.d==td()?' · hoy':''}</b><b class="${!w&&o.g<0?'no':'ok'}">${$(w?o.v:o.g)}</b></div><div class="m">${o.n} producto${o.n==1?'':'s'} · ${un(o.u)} vendidas</div></div>`).join(''):'<div class="empty" style="padding:22px">Aún no hay ventas.</div>')+`<button class="s" onclick="hcC()">Ver por conteo</button><button class="s" onclick="cm()">Cerrar</button>`)}
+function rgDay(d){const e=gE();cm();RG.m='d';RG.ref=d;RG.ef=e&&!wk(e)?e.id:'';RG.pf='';rg()}
+function hcC(){const e=gE();show(`<h3>Registro por conteo de ${E(e.n)}</h3>`+e.pr.filter(p=>p.end||hasSales(p)).map(p=>{const s=sum(p);return`<div class="card" style="margin:8px 0" onclick="vc(${p.id==(opn(e)||e.pr[0]).id?'null':`'${p.id}'`})"><div class="row"><b>${fd(p.start)}${p.end?' – '+fd(p.end):' · en curso'}</b><b class="${!wk(e)&&s.g<0?'no':'ok'}">${$(wk(e)?s.v:s.g)}</b></div><div class="m">${p.ps.length} productos${whoNames(p)}</div></div>`}).join('')+`<button class="s" onclick="cm()">Cerrar</button>`)}
 function nuevoDesde(e,p){if(opn(e))return;e.pr.unshift({id:nid(),start:td(),end:null,from:p.id,kk:'|'+p.ps.reduce((a,x)=>a.concat((x.vr||[]).map(z=>String(z.id)),(x.vx||[]).map(z=>String(z.id))),[]).join('|')+'|',ke:'|'+p.ps.reduce((a,x)=>a.concat((x.en||[]).map(z=>String(z.id))),[]).join('|')+'|',kp:'|'+p.ps.map(x=>String(x.id)).join('|')+'|',ps:p.ps.map(x=>{keepLast(x,!wk(e));const k=calc(x);return{id:nid(),n:x.n,fin:null,md:x.md,fis:x.fis,lc:x.lc,lp:x.lp,en:(k.done&&!k.err?k.left:k.L).map(y=>({id:nid(),f:td(),q:y.q,c:y.c,p:y.p,i:true}))}})})}
 async function nc(){const e=gE();if(!e||opn(e))return;const p=[...e.pr].sort((a,b)=>(b.end||b.start).localeCompare(a.end||a.start))[0];if(!p||!await ask('¿Empezar un registro nuevo con el sobrante del anterior como inicial?'))return;nuevoDesde(e,p);lg(e,'Empezó un registro nuevo');cpid=null;sv();r()}
 function np(){show(`<h3>Nuevo producto</h3><input id="f1" placeholder="Nombre del producto"><div class="m" style="margin-top:6px">Con cuánto empiezas</div><input id="f2" type="number" inputmode="decimal" placeholder="Cantidad inicial">${wk(gE())?'':'<input id="f3" type="number" inputmode="decimal" placeholder="Costo por unidad (opcional)">'}<input id="f4" type="number" inputmode="decimal" placeholder="Precio de venta por unidad (opcional)"><button class="b" onclick="sp()">Agregar producto</button><button class="s" onclick="cm()">Cancelar</button>`)}
@@ -616,7 +621,7 @@ function ipvPdf(a,b,lbl,inc,pf,ef){const R=ipvData(a,b,inc,pf,ef);if(!R.length)r
 const A=agg(a,b,inc,pf,ef),d=pdfDoc(),q=n=>un(Math.round(n*100)/100),z=n=>Math.abs(n)<1e-9?'':q(n),
 en=ef?(D.est.find(e=>e.id==ef)||{}).n:'',pn=pf?(A.names.find(x=>x.toLowerCase()==pf)||pf):'',
 fl=[(ef?'Establecimiento: '+en:'Todos los establecimientos'),(pf?'Producto: '+pn:'Todos los productos')].join('  ·  ');
-d.np();d.title('IPV - Inventario y Ventas',15,[...(invBN()?[invBN()]:[]),'Período: '+lbl,fl]);
+d.np();{const bn=invBN();d.title(bn||'IPV - Inventario y Ventas',bn?(bn.length<=30?22:bn.length<=45?18:14):15,['Período: '+lbl,fl])}
 const C=[{h:'Producto',w:168},{h:'Inv.\ninicial',w:46,a:'r'},{h:'Entradas',w:46,a:'r'},{h:'Ajuste\nconteo',w:46,a:'r'},{h:'Disponible',w:50,a:'r'},{h:'Inv.\nfinal',w:46,a:'r'},{h:'Cantidad\nvendida',w:46,a:'r'},{h:'Traslados',w:46,a:'r'},{h:'Precio\nventa',w:52,a:'r'},{h:'Importe\nventa',w:62,a:'r'},{h:'Costo',w:62,a:'r'},{h:'Ganancia',w:62,a:'r'}];
 const eid=r=>r.key.slice(0,r.key.indexOf('|')),multi=new Set(R.map(eid)).size>1,rows=[],T={ini:0,ent:0,aj:0,tot:0,fin:0,v:0,tr:0,imp:0,cos:0,g:0};let S=null,cur=null;
 const sumRow=(k,t,lab)=>({k,c:[lab,q(t.ini),z(t.ent),z(t.aj),q(t.tot),q(t.fin),q(t.v),z(t.tr),'',$(t.imp),$(t.cos),$(t.g)]}),flush=()=>{if(S&&multi)rows.push(sumRow('s',S,'Subtotal '+cur))};
@@ -716,7 +721,7 @@ acs();
 r();setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script>(function(){
-var APP_V=79,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=81,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
