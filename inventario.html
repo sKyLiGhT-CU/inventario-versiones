@@ -135,7 +135,7 @@ if(e.rol!=null&&e.rol!='d'&&e.rol!='t')delete e.rol;
 sN(e,'t');sS(e,'_h',3000);
 e.dl=(Array.isArray(e.dl)?e.dl:[]).filter(x=>(typeof x=='string'||typeof x=='number')&&/^[\w.-]{1,40}$/.test(String(x)));
 e.pr=sL(e.pr,q=>{if(!SDT(q.start))q.start=td();if(q.end!=null&&!SDT(q.end))q.end=q.start;if(q.from!=null&&!SID(q.from))delete q.from;if(q.kk!=null&&typeof q.kk!='string')delete q.kk;
-q.ps=sL(q.ps,x=>{sS(x,'n',120);if(typeof x.n!='string')x.n='';sN(x,'fin');sN(x,'vv');if(x.md!=null&&x.md!='v'&&x.md!='f')delete x.md;
+q.ps=sL(q.ps,x=>{sS(x,'n',120);if(typeof x.n!='string')x.n='';sN(x,'fin');sN(x,'vv');sN(x,'lc');sN(x,'lp');if(x.md!=null&&x.md!='v'&&x.md!='f')delete x.md;
 x.en=sL(x.en,y=>{if(!SDT(y.f))y.f=td();sN(y,'q');sN(y,'c');sN(y,'p');sN(y,'pt');if(y.q==null)y.q=0;if(y.c==null)y.c=0;if(y.p==null)y.p=0});
 const vs=y=>{sN(y,'q');sN(y,'p');sN(y,'ts');sS(y,'w',80);sS(y,'nt',200);if(y.q==null)y.q=0};
 x.vr=sL(x.vr,vs);if(x.vx!=null)x.vx=sL(x.vx,vs);
@@ -158,7 +158,7 @@ ab.slice(1).forEach(p=>{p.ps.forEach(x=>{if(!k.ps.some(z=>nm(z)==nm(x)))k.ps.pus
 const rm=new Set(ab.slice(1).map(p=>p.id));e.pr=e.pr.filter(p=>!rm.has(p.id))}
 function mergeEst(a,b){const dl=new Set([...(a.dl||[]),...(b.dl||[])].map(String));const r=mg(a,b,dl);r.dl=[...dl];r.id=a.id;dedupe(r);lateK(r);return r}
 function lateNew(o,x){const k=calc(x),I=a=>(a||[]).map(z=>String(z.id)).join('|')+'|';
-const tx={id:nid(),n:x.n,fin:null,md:x.md,fis:x.fis,en:(k.done&&!k.err?k.left:k.L).map(y=>({id:nid(),f:o.start,q:y.q,c:y.c,p:y.p,i:true}))};
+const tx={id:nid(),n:x.n,fin:null,md:x.md,fis:x.fis,lc:x.lc,lp:x.lp,en:(k.done&&!k.err?k.left:k.L).map(y=>({id:nid(),f:o.start,q:y.q,c:y.c,p:y.p,i:true}))};
 o.ps.push(tx);if(typeof o.kk=='string')o.kk+=I(x.vr)+I(x.vx);if(typeof o.ke=='string')o.ke+=I(x.en);if(typeof o.kp=='string')o.kp+=String(x.id)+'|';return tx}
 function lateK(e){if(!e||!Array.isArray(e.pr))return;const nm=x=>String(x.n).trim().toLowerCase();e.dl=e.dl||[];
 e.pr.forEach(o=>{if(o.end||typeof o.kk!='string')return;const c=e.pr.find(p=>p.id==o.from);if(!c||!c.end)return;
@@ -191,7 +191,7 @@ RV.forEach(z=>{const e=z.e;e.dl=e.dl||[];if(!e.pr.some(q=>q.id==z.p.id))return;z
 sv();cm();r();toast('Se borraron '+S.length+' producto(s) y '+RV.length+' registro(s) vacío(s).')}
 let LSZ=0,LWN=0;
 const persist=()=>{try{const s=JSON.stringify(D);localStorage.setItem('inv2',s);LSZ=s.length;if(LSZ>3.5e6&&!LWN){LWN=1;setTimeout(()=>toast('⚠️ La app ocupa '+(LSZ/1e6).toFixed(1)+' MB de unos 5 MB. Guarda un respaldo.',10000),1500)}}catch(e){say('NO se pudo guardar: el teléfono se quedó sin espacio. Guarda un respaldo ahora (⋮ → Guardar respaldo).')}};
-const sv=()=>{D.est.forEach(e=>{dedupe(e);lateK(e);stamp(e,false)});persist();autoSync()};
+const sv=()=>{D.est.forEach(e=>{dedupe(e);lateK(e);keepAll(e);stamp(e,false)});persist();autoSync()};
 D.est.forEach(e=>{norm(e);dedupe(e);lateK(e);stamp(e,true)});persist();
 const busy=()=>!!G('md').innerHTML||(document.activeElement&&document.activeElement.id=='sq');
 let QS=null,tT=null;
@@ -331,8 +331,13 @@ return false}
 if(A&&A.addListener){A.addListener('backButton',()=>{if(!atras())A.exitApp()})}
 else{history.pushState({g:1},'');onpopstate=()=>{if(atras())history.pushState({g:1},'')}}})();
 const pcs=p=>(p.pc||[]).filter(c=>c&&+c.ts>0).sort((a,b)=>a.ts-b.ts),ept=x=>+x.pt||Math.floor((+x.id||0)/100),effP=(pc,x,t)=>{let q=x.p;const te=ept(x);for(const c of pc)if(c.ts>te&&c.ts<=t)q=c.p;return q};
-function curPrice(p){const L=[...p.en].sort((a,b)=>a.f.localeCompare(b.f)||a.id-b.id),x=L[L.length-1];return x?effP(pcs(p),x,1/0):0}
-function pcInfo(p){const L=pcs(p);return`<div class="m">Precio de venta actual: <b>${$(curPrice(p))}</b></div>`+(L.length?`<div class="m" style="margin-top:2px">Cambios de precio: ${L.map(c=>acTm(c.ts)+' → '+$(c.p)).join(' · ')}</div>`:'')}
+function curPrice(p){const L=[...p.en].sort((a,b)=>a.f.localeCompare(b.f)||a.id-b.id),x=L[L.length-1];return x?effP(pcs(p),x,1/0):(+p.lp||0)}
+function lastCostE(p){const L=(p.en||[]).filter(x=>x.c!==''&&x.c!=null&&+x.c>0).sort((a,b)=>String(a.f).localeCompare(String(b.f))||(+a.id||0)-(+b.id||0));return L.length?+L[L.length-1].c:null}
+function lastCost(p){const c=lastCostE(p);return c!=null?c:(+p.lc>0?+p.lc:null)}
+/* guarda en el producto su último costo y precio, para no perderlos cuando se agota y pasa al registro nuevo */
+function keepLast(x,own){if(!x||x.fis)return;if(own){const c=lastCostE(x);if(c!=null&&x.lc!==c)x.lc=c}if((x.en||[]).some(y=>+y.q>0)){const pr=curPrice(x);if(isFinite(pr)&&pr>0&&x.lp!==pr)x.lp=pr}}
+const keepAll=e=>{const o=opn(e);if(o)o.ps.forEach(x=>keepLast(x,!wk(e)))};
+function pcInfo(p){const L=pcs(p),lc=wk(gE())?null:lastCost(p);return`<div class="m">Precio de venta actual: <b>${$(curPrice(p))}</b></div>`+(lc==null?'':`<div class="m" style="margin-top:2px">Último costo: <b>${$(lc)}</b></div>`)+(L.length?`<div class="m" style="margin-top:2px">Cambios de precio: ${L.map(c=>acTm(c.ts)+' → '+$(c.p)).join(' · ')}</div>`:'')}
 const hpr=x=>x.p!=null&&x.p!==''&&!isNaN(+x.p);
 function calc(p){
   if(!p || !p.en || !Array.isArray(p.en)) return {tot:0,L:[],f:null,done:false};
@@ -367,7 +372,7 @@ const vday=(z,p)=>z.t>0&&isFinite(z.t)?iso(new Date(z.t)):(p.end||p.start||td())
 function pinst(e,fl){const M=new Map();
 [...e.pr].filter(fl||(()=>true)).sort((x,y)=>(x.start||'').localeCompare(y.start||'')||(x.end||'9999').localeCompare(y.end||'9999')).forEach(p=>p.ps.forEach(x=>{if(x.fis)return;const nk=x.n.trim().toLowerCase();let g=M.get(nk);if(!g){g={n:x.n.trim(),nk,L:[]};M.set(nk,g)}g.n=x.n.trim();let x2=x,k2=calc(x);
 if(x.md=='v'&&k2.err&&k2.f!=null&&k2.f<-1e-9){const EL=[...(x.en||[])].sort((a,b)=>(a.f||'').localeCompare(b.f||'')),la=EL[EL.length-1]||{c:0,p:0},lt=[...(x.vr||[]),...(x.vx||[])].reduce((m,y)=>Math.max(m,+y.ts||0),0);
-x2=Object.assign({},x,{en:[...(x.en||[]),{id:nid(),f:lt>0?iso(new Date(lt)):td(),q:-k2.f,c:+la.c||0,p:+la.p||curPrice(x),ov:true}]});k2=calc(x2)}
+x2=Object.assign({},x,{en:[...(x.en||[]),{id:nid(),f:lt>0?iso(new Date(lt)):td(),q:-k2.f,c:+la.c||lastCost(x)||0,p:+la.p||curPrice(x),ov:true}]});k2=calc(x2)}
 g.L.push({p,x:x2,k:k2,v:x.md=='v'})}));return M}
 function dsum(e){const d=td();let v=0,c=0;pinst(e,q=>!q.end||q.end>=d).forEach(g=>{const w=pwin(g,d,d,false);v+=w.imp;c+=w.cos});return{v,c,g:v-c}}
 function migV(e){if(!e)return;const p=opn(e);if(!p)return;let ch=false;p.ps.forEach(x=>{if(!x.fis&&x.md!='v'&&x.fin==null){x.md='v';ch=true}});if(ch)sv()}
@@ -376,7 +381,17 @@ const n=Math.max(0,k.tot-(p.fin||0)-(p.vx||[]).reduce((a,x)=>a+(+x.q||0),0));
 if(!await ask('Se convertirá el final ('+un(p.fin||0)+') en una venta de '+un(n)+' unidades. ¿Continuar?'))return;smd(pid,'v')}
 function cardV(e,x,k,PG){const T0=td(),g=PG&&PG.get(x.n.trim().toLowerCase()),w=g?pwin(g,T0,T0,false):{v:0,imp:0,cos:0},vw=wk(e),
 qd=(x.md!='v'&&k.f!=null)?k.f:Math.max(0,k.tot-sumV(x)),hoy=w.v>0||w.imp>0,gn=hoy?(vw?w.imp:w.imp-w.cos):0,leg=x.md!='v'&&k.f!=null&&!k.err;
-return`<div class="card ${k.err?'a-no':hoy?(!vw&&gn<0?'a-no':'a-ok'):'a-m'}" data-n="${E(fz(x.n))}" onclick="pv('${x.id}')"><div class="row"><b>📦 ${E(x.n)}</b><b class="${k.err?'no':hoy?(!vw&&gn<0?'no':'ok'):'m'}">${k.err?'Revisa las ventas':hoy?$(gn):leg?'Pasar a ventas':'Hoy sin ventas'}</b></div><div class="m">Disponible ${un(k.tot)} · ${leg?'Cerrado con '+un(k.f):'Quedan '+un(qd)}${hoy?' · Hoy vendidas '+un(w.v):''}</div>${k.tot>0&&!k.err?`<div class="bar"><i style="width:${Math.min(100,qd/k.tot*100)}%"></i></div>`:''}</div>`}
+return`<div class="card ${k.err?'a-no':hoy?(!vw&&gn<0?'a-no':'a-ok'):'a-m'}" data-n="${E(fz(x.n))}" onclick="pv('${x.id}')"><div class="row"><b>📦 ${E(x.n)}</b><b class="${k.err?'no':hoy?(!vw&&gn<0?'no':'ok'):'m'}">${k.err?'Revisa las ventas':hoy?$(gn):leg?'Pasar a ventas':'Hoy sin ventas'}</b></div><div class="row"><div class="m">Disponible ${un(k.tot)} · ${leg?'Cerrado con '+un(k.f):'Quedan '+un(qd)}${hoy?' · Hoy vendidas '+un(w.v):''}</div>${(x.md=='v'&&!k.err&&qd>=1-1e-9)?`<button class="chip" aria-label="Vender 1 de ${E(x.n)}" onclick="event.stopPropagation();qv('${x.id}')" style="margin:0 0 0 8px;padding:8px 18px;font-weight:700">+1</button>`:''}</div>${k.tot>0&&!k.err?`<div class="bar"><i style="width:${Math.min(100,qd/k.tot*100)}%"></i></div>`:''}</div>`}
+/* ===== Venta rápida: +1 desde la tarjeta, con Deshacer ===== */
+let QUT=null;
+function qvBar(id,sid,n){let t=document.getElementById('qut');if(!t){t=document.createElement('div');t.id='qut';t.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:98;background:#0f172a;color:#fff;padding:10px 14px;border-radius:12px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.35);align-items:center;justify-content:space-between;gap:10px';document.body.appendChild(t)}
+t.innerHTML='<span></span><button style="background:transparent;border:1px solid #fff;color:#fff;border-radius:999px;padding:6px 14px;font-size:14px;font-weight:700"></button>';
+t.firstChild.textContent='Vendida 1 · '+n;const b=t.lastChild;b.textContent='Deshacer';b.onclick=()=>qvUndo(id,sid);t.style.display='flex';clearTimeout(QUT);QUT=setTimeout(()=>{t.style.display='none'},5000)}
+function qv(id){const e=gE();if(!e)return;if(window.lockedP_&&window.lockedP_(id))return pv(id);const p=gp(id);if(!p||p.fis||p.md!='v')return pv(id);
+if(lim(p,null)<1-1e-9)return toast('No quedan unidades de "'+p.n+'".');
+const y={id:nid(),q:1,w:myW(),ts:Date.now()};p.vr=p.vr||[];p.vr.push(y);lg(e,'Registró 1 vendidas de "'+p.n+'"');sv();r();qvBar(id,y.id,p.n)}
+function qvUndo(id,sid){const t=document.getElementById('qut');if(t)t.style.display='none';clearTimeout(QUT);const e=gE();if(!e)return;const p=gp(id);if(!p||!(p.vr||[]).some(z=>z.id==sid))return;
+p.vr=p.vr.filter(z=>z.id!=sid);(e.dl=e.dl||[]).push(String(sid));lg(e,'Eliminó una venta de "'+p.n+'"');sv();r()}
 function pwin(g,a,b,inc){const o={v:0,imp:0,cos:0,aj:0,tr:0,pb:new Map(),days:[],pe:0},T=td();
 g.L.forEach(I=>{const p=I.p,k=I.k;
 if(I.v)(I.x.en||[]).forEach(y=>{if(y.aj&&y.q>0&&(y.f||'')>=a&&(y.f||'')<=b){o.aj+=y.q;o.days.push({d:y.f,q:y.q,p:0,imp:0,cos:0,aj:1})}});
@@ -457,7 +472,7 @@ async function rn(){const e=gE(),n=await prm('Nombre del establecimiento',e.n);i
 async function de0(){if(!await ask('¿Eliminar este establecimiento con todos sus productos y registros? No se puede deshacer.',{ok:'Eliminar',danger:1}))return;D.est=D.est.filter(z=>z.id!=ce);sv();cm();ce=null;cpid=null;pst=[];r()}
 function vc(id){const a=cpid==null?'':String(cpid),b=id==null?'':String(id);if(a!=b){pst.push(cpid);cpid=id}cm();r()}
 function hc(){const e=gE();show(`<h3>Registro de ${E(e.n)}</h3>`+e.pr.filter(p=>p.end||hasSales(p)).map(p=>{const s=sum(p);return`<div class="card" style="margin:8px 0" onclick="vc(${p.id==(opn(e)||e.pr[0]).id?'null':`'${p.id}'`})"><div class="row"><b>${fd(p.start)}${p.end?' – '+fd(p.end):' · en curso'}</b><b class="${!wk(e)&&s.g<0?'no':'ok'}">${$(wk(e)?s.v:s.g)}</b></div><div class="m">${p.ps.length} productos${whoNames(p)}</div></div>`}).join('')+`<button class="s" onclick="cm()">Cerrar</button>`)}
-function nuevoDesde(e,p){if(opn(e))return;e.pr.unshift({id:nid(),start:td(),end:null,from:p.id,kk:'|'+p.ps.reduce((a,x)=>a.concat((x.vr||[]).map(z=>String(z.id)),(x.vx||[]).map(z=>String(z.id))),[]).join('|')+'|',ke:'|'+p.ps.reduce((a,x)=>a.concat((x.en||[]).map(z=>String(z.id))),[]).join('|')+'|',kp:'|'+p.ps.map(x=>String(x.id)).join('|')+'|',ps:p.ps.map(x=>{const k=calc(x);return{id:nid(),n:x.n,fin:null,md:x.md,fis:x.fis,en:(k.done&&!k.err?k.left:k.L).map(y=>({id:nid(),f:td(),q:y.q,c:y.c,p:y.p,i:true}))}})})}
+function nuevoDesde(e,p){if(opn(e))return;e.pr.unshift({id:nid(),start:td(),end:null,from:p.id,kk:'|'+p.ps.reduce((a,x)=>a.concat((x.vr||[]).map(z=>String(z.id)),(x.vx||[]).map(z=>String(z.id))),[]).join('|')+'|',ke:'|'+p.ps.reduce((a,x)=>a.concat((x.en||[]).map(z=>String(z.id))),[]).join('|')+'|',kp:'|'+p.ps.map(x=>String(x.id)).join('|')+'|',ps:p.ps.map(x=>{keepLast(x,!wk(e));const k=calc(x);return{id:nid(),n:x.n,fin:null,md:x.md,fis:x.fis,lc:x.lc,lp:x.lp,en:(k.done&&!k.err?k.left:k.L).map(y=>({id:nid(),f:td(),q:y.q,c:y.c,p:y.p,i:true}))}})})}
 async function nc(){const e=gE();if(!e||opn(e))return;const p=[...e.pr].sort((a,b)=>(b.end||b.start).localeCompare(a.end||a.start))[0];if(!p||!await ask('¿Empezar un registro nuevo con el sobrante del anterior como inicial?'))return;nuevoDesde(e,p);lg(e,'Empezó un registro nuevo');cpid=null;sv();r()}
 function np(){show(`<h3>Nuevo producto</h3><input id="f1" placeholder="Nombre del producto"><div class="m" style="margin-top:6px">Con cuánto empiezas</div><input id="f2" type="number" inputmode="decimal" placeholder="Cantidad inicial">${wk(gE())?'':'<input id="f3" type="number" inputmode="decimal" placeholder="Costo por unidad (opcional)">'}<input id="f4" type="number" inputmode="decimal" placeholder="Precio de venta por unidad (opcional)"><button class="b" onclick="sp()">Agregar producto</button><button class="s" onclick="cm()">Cancelar</button>`)}
 function sp(){const n=G('f1').value.trim(),q=parseFloat(G('f2').value)||0,cs=G('f3')?G('f3').value.trim():'',ps=G('f4').value.trim(),fis=cs===''&&ps==='',c=parseFloat(cs)||0,pr=parseFloat(ps)||0;if(!n)return say('Escribe el nombre.');if(!fis&&q>0&&!pr)return say('Escribe el precio de venta, o deja costo y precio vacíos para solo contar unidades.');
@@ -495,7 +510,7 @@ show(`<h3>${y?'Editar':'Nueva'} venta con otro precio</h3><input id="v1" type="n
 function sv2(pid,vid){const p=gp(pid),q=parseFloat(G('v1').value),pr=parseFloat(G('v2').value);if(!(q>0)||isNaN(pr)||pr<0)return say('Escribe la cantidad y el precio.');p.vx=p.vx||[];const y=p.vx.find(z=>z.id==vid);if(y)Object.assign(y,{q,p:pr});else p.vx.push({id:nid(),q,p:pr,w:myW(),ts:Date.now()});lg(gE(),(y?'Editó':'Registró')+' '+un(q)+' vendidas a '+$(pr)+' de "'+p.n+'"');sv();r();pv(pid)}
 async function dv(pid,vid){if(!await ask('¿Eliminar esta venta con otro precio?',{ok:'Eliminar',danger:1}))return;const p=gp(pid);p.vx=p.vx.filter(z=>z.id!=vid);(gE().dl=gE().dl||[]).push(String(vid));lg(gE(),'Eliminó una venta con otro precio de "'+p.n+'"');sv();r();pv(pid)}
 function sd(f){G('e1').value=f}
-function fe(pid,eid){const p=gp(pid),x=p.en.find(z=>z.id==eid),l=[...p.en].sort((a,b)=>a.f.localeCompare(b.f)).pop()||{},t=td(),e=x||{f:t,q:'',c:l.c??'',p:(p.en.length?curPrice(p):'')};
+function fe(pid,eid){const p=gp(pid),x=p.en.find(z=>z.id==eid),l=[...p.en].sort((a,b)=>a.f.localeCompare(b.f)).pop()||{},t=td(),e=x||{f:t,q:'',c:l.c??(p.lc??''),p:((p.en.length||p.lp)?curPrice(p):'')};
 show(`<h3>${x?'Editar':'Nueva'} entrada</h3><div class="m">Día de la entrada</div><div class="chips">${[['Hoy',t],['Ayer',add(t,-1)],['Anteayer',add(t,-2)]].map(a=>`<button class="chip" onclick="sd('${a[1]}')">${a[0]}</button>`).join('')}</div><input id="e1" type="date" value="${e.f}"><input id="e2" type="number" inputmode="decimal" placeholder="Cantidad" value="${e.q}">${p.fis?'':`${wk(gE())?`<input id="e3" type="hidden" value="${e.c===''?0:e.c}">`:`<input id="e3" type="number" inputmode="decimal" placeholder="Costo por unidad" value="${e.c}">`}<input id="e4" type="number" inputmode="decimal" placeholder="Precio de venta por unidad" value="${x?effP(pcs(p),x,1/0):e.p}">`}<button class="b" onclick="se('${pid}','${eid||''}')">Guardar</button>${x?`<button class="s" onclick="de('${pid}','${eid}')">Eliminar</button>`:''}<button class="s" onclick="pv('${pid}')">Volver</button>`)}
 function se(pid,eid){const p=gp(pid),q=parseFloat(G('e2').value),c=p.fis?0:parseFloat(G('e3').value),pr=p.fis?0:parseFloat(G('e4').value);if(!(q>0)||isNaN(c)||isNaN(pr))return say(wk(gE())?'Escribe la cantidad y el precio de venta.':'Escribe cantidad, costo y precio de venta.');
 const f=G('e1').value||td(),x=p.en.find(z=>z.id==eid);if(x){const op=effP(pcs(p),x,1/0);Object.assign(x,{f,q,c});if(Math.abs(pr-op)>1e-9){x.p=pr;x.pt=Date.now()}}else p.en.push({id:nid(),f,q,c,p:pr});lg(gE(),x?'Editó una entrada de "'+p.n+'" ('+un(q)+' u)':'Agregó '+un(q)+' unidades de entrada a "'+p.n+'"');sv();r();pv(pid)}
@@ -505,7 +520,7 @@ const TH=[['auto','Automático','#1d4ed8','#0b1220','#6b9bff'],['esmeralda','Esm
 const curTh=()=>{try{const t=localStorage.getItem('inv2t');return TH.some(x=>x[0]==t)?t:'auto'}catch(e){return'auto'}};
 function setTheme(id){try{localStorage.setItem('inv2t',id)}catch(e){}if(id=='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',id);const m=document.querySelector('meta[name=theme-color]'),t=TH.find(x=>x[0]==id);if(m&&t)m.setAttribute('content',t[2]);th()}
 function th(){const c=curTh();show(`<h3>Cambiar tema</h3>`+TH.map(x=>`<div class="card" style="margin:8px 0;${x[0]==c?'border-color:var(--p)':''}" onclick="setTheme('${x[0]}')"><div class="row"><b>${x[0]==c?'✓ ':''}${x[1]}</b><span style="display:flex;gap:4px"><i style="width:18px;height:18px;border-radius:50%;background:${x[2]};border:1px solid var(--b)"></i><i style="width:18px;height:18px;border-radius:50%;background:${x[3]};border:1px solid var(--b)"></i><i style="width:18px;height:18px;border-radius:50%;background:${x[4]};border:1px solid var(--b)"></i></span></div></div>`).join('')+`<button class="s" onclick="cm()">Cerrar</button>`)}
-function mn(){show(`<h3>Opciones</h3><div class="m ${old()?'no':''}">${lb()?'Último respaldo: '+fd(lb()):'Aún no has guardado un respaldo'}</div><div class="m ${LSZ>3.5e6?'no':''}">Espacio usado: ${(LSZ/1e6).toFixed(1)} MB de ~5 MB</div><div class="m">${typeof licTxt==='function'?licTxt():''}</div><button class="s" onclick="cm();syncAll(false)">🔄 Sincronizar todos los locales</button><button class="s" onclick="cm();licAct()">🔑 Activar código</button><button class="s" onclick="th()">🎨 Cambiar tema</button><button class="b" onclick="guardar()">Guardar respaldo en Drive</button><label class="s" style="display:block;text-align:center;margin:8px 0 0">Restaurar desde respaldo<input type="file" accept=".json" onchange="imp(event)" hidden></label>${hp()?'<button class="s" onclick="undo()">Deshacer última restauración</button>':''}<button class="s" onclick="cm()">Cerrar</button>`)}
+function mn(){show(`<h3>Opciones</h3><div class="m ${old()?'no':''}">${lb()?'Último respaldo: '+fd(lb()):'Aún no has guardado un respaldo'}</div>${(()=>{const t=+ld('inv2ab',0);return t?'<div class="m">Respaldo automático en el teléfono: '+fd(iso(new Date(t)))+'</div>':''})()}<div class="m ${LSZ>3.5e6?'no':''}">Espacio usado: ${(LSZ/1e6).toFixed(1)} MB de ~5 MB</div><div class="m">${typeof licTxt==='function'?licTxt():''}</div><button class="s" onclick="cm();syncAll(false)">🔄 Sincronizar todos los locales</button><button class="s" onclick="cm();licAct()">🔑 Activar código</button><button class="s" onclick="th()">🎨 Cambiar tema</button><button class="b" onclick="guardar()">Guardar respaldo en Drive</button><label class="s" style="display:block;text-align:center;margin:8px 0 0">Restaurar desde respaldo<input type="file" accept=".json" onchange="imp(event)" hidden></label>${hp()?'<button class="s" onclick="undo()">Deshacer última restauración</button>':''}<button class="s" onclick="cm()">Cerrar</button>`)}
 const dump=()=>JSON.stringify({v:'inventario',D,did:(window.DID?DID():null)});
 function ex(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dump()],{type:'application/json'}));a.download='respaldo-inventario-'+td()+'.json';a.click();mkb();r();cm()}
 async function guardar(){const C=window.Capacitor,n='respaldo-inventario-'+td()+'.json';
@@ -591,7 +606,7 @@ return{n:R.length,bytes:d.done('Inventario · generado '+fd(td())+' '+p2(nw.getH
 function cexAdj(x,d){/* d = contado - lo que debia haber. Negativo: faltante. Positivo: sobrante. */
 if(Math.abs(d)<1e-9)return;if(x.md!='v')x.md='v';
 if(d<0){x.vr=x.vr||[];x.vr.push({id:nid(),q:-d,w:'Conteo',ts:Date.now(),p:0,aj:1})}
-else{x.en=x.en||[];const EL=x.en.filter(y=>!y.aj&&y.q>0).sort((p,q)=>(p.f||'').localeCompare(q.f||'')),la=EL[EL.length-1]||{c:0};x.en.push({id:nid(),f:td(),q:d,c:+la.c||0,p:curPrice(x),aj:1})}}
+else{x.en=x.en||[];const EL=x.en.filter(y=>!y.aj&&y.q>0).sort((p,q)=>(p.f||'').localeCompare(q.f||'')),la=EL[EL.length-1]||{c:0};x.en.push({id:nid(),f:td(),q:d,c:+la.c||lastCost(x)||0,p:curPrice(x),aj:1})}}
 function cexL(){const e=gE(),p=opn(e);if(!p)return[];return p.ps.filter(x=>!x.fis).map(x=>{const k=calc(x);let ex=null;
 if(x.md=='v')ex=k.err?null:(k.f!=null?k.f:k.tot);else if(x.fin==null&&!(x.vx||[]).length&&!k.err)ex=k.tot;
 return{x,ex}})}
@@ -659,11 +674,21 @@ o.end=add(td(),-1);nuevoDesde(e,o);ch=true});if(ch){cpid=null;sv();r()}}catch(x)
 let cierreT=null;
 function acs(){clearInterval(cierreT);if(!D.est.some(e=>e.code&&!wk(e))){autoCierre();return}
 const t0=Date.now();syncAll(true);cierreT=setInterval(()=>{if(!syncing||Date.now()-t0>8000){clearInterval(cierreT);autoCierre()}},250)}
+/* Respaldo automático: una vez por semana se guarda una copia en Documentos/Inventario (se conservan las últimas 4) */
+async function autoRespaldo(){try{const C=window.Capacitor;if(!(C&&C.isNativePlatform&&C.isNativePlatform())||!D.est.length)return;
+if(Date.now()-(+ld('inv2ab',0)||0)<6048e5)return;
+const np=(a,b,o)=>C.Plugins&&C.Plugins[a]&&C.Plugins[a][b]?C.Plugins[a][b](o):C.nativePromise(a,b,o),n='respaldo-auto-'+td()+'.json',wr=()=>np('Filesystem','writeFile',{path:'Inventario/'+n,data:dump(),directory:'DOCUMENTS',encoding:'utf8',recursive:true});
+try{await wr()}catch(e1){await np('Filesystem','requestPermissions',{});await wr()}
+try{localStorage.setItem('inv2ab',String(Date.now()))}catch(e){}
+toast('💾 Respaldo automático guardado en Documentos/Inventario',5000);
+try{const l=await np('Filesystem','readdir',{path:'Inventario',directory:'DOCUMENTS'}),L=(l.files||[]).map(f=>typeof f=='string'?f:f.name).filter(f=>/^respaldo-auto-.*\.json$/.test(f)).sort();
+for(const f of L.slice(0,Math.max(0,L.length-4)))await np('Filesystem','deleteFile',{path:'Inventario/'+f,directory:'DOCUMENTS'})}catch(e){}
+}catch(e){}}
 acs();
-r();setTimeout(askCam,1200);
+r();setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script>(function(){
-var APP_V=70,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=72,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -696,7 +721,7 @@ var g=function(k){try{return localStorage.getItem(k)}catch(e){return null}};
 var s=function(k,v){try{localStorage.setItem(k,v)}catch(e){}};
 function did(){var v=g('inv_did');if(!v||v.length<12){v='';try{var a=new Uint8Array(10);crypto.getRandomValues(a);a.forEach(function(b){v+=('0'+b.toString(16)).slice(-2)})}catch(e){for(var i=0;i<20;i++)v+=Math.floor(Math.random()*16).toString(16)}s('inv_did',v)}return v}
 function cnt(){try{return D.est.reduce(function(a,e){var o=opn(e);return a+(o&&o.ps?o.ps.length:0)},0)}catch(e){return 0}}
-function uso7(){try{var lim=iso(new Date(Date.now()-6*864e5)),n=0;D.est.forEach(function(e){(e.pr||[]).forEach(function(w){(w.ps||[]).forEach(function(p){(p.en||[]).forEach(function(x){if(x.f>=lim)n++})})})});return n}catch(e){return 0}}
+function uso7(){try{var cut=Date.now()-7*864e5,lim=iso(new Date(cut)),n=0;D.est.forEach(function(e){(e.pr||[]).forEach(function(w){(w.ps||[]).forEach(function(p){(p.en||[]).forEach(function(x){if(!x.i&&!x.aj&&x.f>=lim)n++});(p.vr||[]).concat(p.vx||[]).forEach(function(y){if(!y.aj&&!y.tr&&+y.ts>=cut)n++})})})});return n}catch(e){return 0}}
 /* hora confiable: nunca retrocede aunque cambien la fecha del teléfono */
 function seen(ms){ms=+ms;if(ms>(+g('inv_maxt')||0))s('inv_maxt',String(ms))}
 function nowT(){return Math.max(Date.now(),+g('inv_maxt')||0)}
@@ -748,6 +773,7 @@ function trial(){if(g('inv_ex')==='1')return false;if(ld('inv_pk','')&&!g('inv_a
 function wkLocked(e){var m=ld('inv_wkl',{});return !!e&&e.rol=='t'&&!!m&&m[e.code]===false}
 function lockedP(id){try{var e=gE();if(!e)return false;var o=opn(e),a=(o&&o.ps?o.ps:[]).slice(0,5).map(function(x){return x.id});if(wk(e))return wkLocked(e)&&a.indexOf(id)<0;if(!trial())return false;return a.indexOf(id)<0}catch(x){return false}}
 function lockedE(id){try{if(!trial())return false;var e=D.est.find(function(z){return z.id==id});if(!e||wk(e))return false;var own=D.est.filter(function(z){return !wk(z)});return !!own[0]&&own[0].id!=id}catch(x){return false}}
+window.lockedP_=lockedP;
 var _go=window.go,_pv=window.pv,_r=window.r;
 window.go=function(id){if(lockedE(id)){blk('Tu código venció. En modo prueba solo puedes usar tu primer establecimiento. Activa un código para recuperar el acceso.');return}return _go.apply(this,arguments)};
 window.pv=function(id){if(lockedP(id)){var e0=gE();if(e0&&wk(e0)){say('La licencia del dueño de este local venció. Pídele que la renueve para volver a usar todos los productos.');return}blk('Tu código venció. En modo prueba solo puedes usar tus primeros 5 productos. Activa un código para recuperar el acceso.');return}return _pv.apply(this,arguments)};
