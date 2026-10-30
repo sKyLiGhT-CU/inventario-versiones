@@ -337,7 +337,7 @@ function invState(x){if(!x||x.fis||x.md!='v')return '';const k=calc(x),q=Math.ma
 function invSaveMin(id){try{const p=gp(id),e=gE(),el=G('f6');if(!p||!e||!el)return;const v=parseFloat(el.value),M=invM();M[e.id]=M[e.id]||{};delete M[e.id][fz(p.n)];if(v>0)M[e.id][fz(G('f1').value.trim()||p.n)]=v;localStorage.setItem('inv2min',JSON.stringify(M))}catch(e){}}
 function invSF(c){if(!SF)return true;try{const e=gE(),o=e&&opn(e),n=c.getAttribute('data-n'),x=o&&o.ps.find(z=>fz(z.n)==n),st=x?invState(x):'';return SF=='a'?st=='a':st!=''}catch(e){return true}}
 function invSet(v){SF=SF==v?'':v;r()}
-function invChips(e,p){let b=0,a=0;p.ps.forEach(x=>{const t=invState(x);if(t)b++;if(t=='a')a++});const c=(k,t)=>'<button class="'+(SF==k?'b':'s')+'" style="margin:0;padding:6px 12px;font-size:13px;width:auto" onclick="invSet(\''+k+'\')">'+t+'</button>';return '<div style="display:flex;gap:6px;margin:8px 12px 0;flex-wrap:wrap">'+c('b','⚠️ Bajo stock ('+b+')')+c('a','🚫 Agotados ('+a+')')+'</div>'}
+function invChips(e,p){let b=0,a=0;p.ps.forEach(x=>{const t=invState(x);if(t)b++;if(t=='a')a++});const c=(k,t)=>'<button class="'+(SF==k?'b':'s')+'" style="margin:0;padding:6px 12px;font-size:13px;width:auto" onclick="invSet(\''+k+'\')">'+t+'</button>';const x1=(b||SF=='b')?c('b','⚠️ Bajo stock ('+b+')'):'',x2=(a||SF=='a')?c('a','🚫 Agotados ('+a+')'):'';if(!x1&&!x2)return '';return '<div style="display:flex;gap:6px;margin:8px 12px 0;flex-wrap:wrap">'+x1+x2+'</div>'}
 const fdBal=e=>{const m=new Map();(e.fd||[]).forEach(x=>{const k=fz(x.c),o=m.get(k)||{k,c:x.c,b:0,L:[]};o.b+=+x.m||0;o.L.push(x);m.set(k,o)});return[...m.values()].map(o=>(o.b=Math.round(o.b*100)/100,o))};
 const fdTot=e=>fdBal(e).reduce((a,o)=>a+(o.b>0.005?o.b:0),0);
 const fdBtn=e=>(e.fd||[]).length?'<button class="s" onclick="fdv()">💳 Por cobrar · '+$(fdTot(e))+'</button>':'';
@@ -420,7 +420,7 @@ const n=Math.max(0,k.tot-(p.fin||0)-(p.vx||[]).reduce((a,x)=>a+(+x.q||0),0));
 if(!await ask('Se convertirá el final ('+un(p.fin||0)+') en una venta de '+un(n)+' unidades. ¿Continuar?'))return;smd(pid,'v')}
 function cardV(e,x,k,PG){const T0=td(),g=PG&&PG.get(x.n.trim().toLowerCase()),w=g?pwin(g,T0,T0,false):{v:0,imp:0,cos:0},vw=wk(e),
 qd=(x.md!='v'&&k.f!=null)?k.f:Math.max(0,k.tot-sumV(x)),hoy=w.v>0||w.imp>0,gn=hoy?(vw?w.imp:w.imp-w.cos):0,leg=x.md!='v'&&k.f!=null&&!k.err;
-return`<div class="card ${k.err?'a-no':hoy?(!vw&&gn<0?'a-no':'a-ok'):'a-m'}" data-n="${E(fz(x.n))}" onclick="pv('${x.id}')"><div class="row"><b>📦 ${E(x.n)}</b><b class="${k.err?'no':hoy?(!vw&&gn<0?'no':'ok'):'m'}">${k.err?'Revisa las ventas':hoy?$(gn):leg?'Pasar a ventas':'Hoy sin ventas'}</b></div><div class="row"><div class="m">Disponible ${un(k.tot)} · ${leg?'Cerrado con '+un(k.f):'Quedan '+un(qd)}${hoy?' · Hoy vendidas '+un(w.v):''}${w.fi>0?' · Fiado hoy '+un(w.fi):''}</div>${(x.md=='v'&&!k.err&&qd>=1-1e-9)?`<button class="chip" aria-label="Vender 1 de ${E(x.n)}" onclick="event.stopPropagation();qv('${x.id}')" style="margin:0 0 0 8px;padding:8px 18px;font-weight:700">+1</button>`:''}</div>${k.tot>0&&!k.err?`<div class="bar"><i style="width:${Math.min(100,qd/k.tot*100)}%"></i></div>`:''}</div>`}
+return`<div class="card ${k.err?'a-no':hoy?(!vw&&gn<0?'a-no':'a-ok'):'a-m'}" data-n="${E(fz(x.n))}" onclick="pv('${x.id}')"><div class="row"><b>📦 ${E(x.n)}</b><b class="${k.err?'no':hoy?(!vw&&gn<0?'no':'ok'):'m'}">${k.err?'Revisa las ventas':hoy?$(gn):leg?'Pasar a ventas':'Hoy sin ventas'}</b></div><div class="row"><div class="m">Disponible ${un(k.tot)} · ${leg?'Cerrado con '+un(k.f):'Quedan '+un(qd)}${hoy?' · Hoy vendidas '+un(w.v):''}${w.fi>0?' · Fiado hoy '+un(w.fi):''}</div></div>${k.tot>0&&!k.err?`<div class="bar"><i style="width:${Math.min(100,qd/k.tot*100)}%"></i></div>`:''}</div>`}
 /* ===== Venta rápida: +1 desde la tarjeta, con Deshacer ===== */
 let QUT=null;
 function qvBar(id,sid,n){let t=document.getElementById('qut');if(!t){t=document.createElement('div');t.id='qut';t.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:98;background:#0f172a;color:#fff;padding:10px 14px;border-radius:12px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.35);align-items:center;justify-content:space-between;gap:10px';document.body.appendChild(t)}
@@ -659,9 +659,9 @@ const eid=r=>r.key.slice(0,r.key.indexOf('|')),multi=new Set(R.map(eid)).size>1,
 const sumRow=(k,t,lab)=>({k,c:[lab,q(t.ini),z(t.ent),z(t.aj),q(t.tot),q(t.fin),q(t.v),z(t.tr),z(t.fi),'',$(t.imp),$(t.cos),$(t.g)]}),flush=()=>{if(S&&multi)rows.push(sumRow('s',S,'Subtotal '+cur))};
 R.forEach(r=>{const id=eid(r);if(id!==(S&&S.id)){flush();S={id,ini:0,ent:0,aj:0,tot:0,fin:0,v:0,tr:0,fi:0,imp:0,cos:0,g:0};cur=r.l;if(multi)rows.push({k:'g',c:[r.l]})}
 for(const k in T){T[k]+=r[k];S[k]+=r[k]}
-const pt=ptxt(r.pb);rows.push({c:[r.n,q(r.ini),z(r.ent),z(r.aj),q(r.tot),q(r.fin),q(r.v),z(r.tr),z(r.fi),$(r.np),$(r.imp),$(r.cos),$(r.g)],note:pt?'Ventas por precio: '+pt:''})});
+const pt=ptxt(r.pb);rows.push({c:[r.n,q(r.ini),z(r.ent),z(r.aj),q(r.tot),q(r.fin),q(r.v),z(r.tr),z(r.fi),$(r.np),$(r.imp),$(r.cos),$(r.g)]})});
 flush();rows.push(sumRow('t',T,'TOTAL'));d.table(C,rows);
-if(!pf){const F=fdNet(a,b,ef),Z=fdPend(ef);if(F.f>0||F.c>0||Z>0||Math.abs(T.fi)>1e-9){d.gap(14);d.table([{h:'Fiado',w:300},{h:'Importe',w:120,a:'r'}],[{c:['Fiado entregado en el período',$(F.f)],note:'El fiado no cuenta como venta hasta que se cobra: pasa a venta el día del cobro.'},{c:['Cobrado en el período',$(F.c)]},{k:'t',c:['Por cobrar hasta hoy',$(Z)]}],{maxW:420})}}
+if(!pf){const F=fdNet(a,b,ef),Z=fdPend(ef);if(F.f>0||F.c>0||Z>0||Math.abs(T.fi)>1e-9){d.gap(14);d.table([{h:'Fiado',w:300},{h:'Importe',w:120,a:'r'}],[{c:['Fiado entregado en el período',$(F.f)]},{c:['Cobrado en el período',$(F.c)]},{k:'t',c:['Por cobrar hasta hoy',$(Z)]}],{maxW:420})}}
 const nw=new Date(),p2=x=>String(x).padStart(2,'0');
 return{n:R.length,bytes:d.done('Inventario · generado '+fd(td())+' '+p2(nw.getHours())+':'+p2(nw.getMinutes()))}}
 
@@ -752,7 +752,7 @@ acs();
 r();setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script>(function(){
-var APP_V=82,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=84,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
