@@ -695,18 +695,40 @@ else{x.en=x.en||[];const EL=x.en.filter(y=>!y.aj&&y.q>0).sort((p,q)=>(p.f||'').l
 function cexL(){const e=gE(),p=opn(e);if(!p)return[];return p.ps.filter(x=>!x.fis).map(x=>{const k=calc(x);let ex=null;
 if(x.md=='v')ex=k.err?null:(k.f!=null?k.f:k.tot);else if(x.fin==null&&!(x.vx||[]).length&&!k.err)ex=k.tot;
 return{x,ex}})}
-function cex(){const e=gE(),p=opn(e);if(!p||wk(e))return;const L=cexL();if(!L.length)return toast('No hay productos para contar.');
+function cex(vals){const e=gE(),p=opn(e);if(!p||wk(e))return;const L=cexL();if(!L.length)return toast('No hay productos para contar.');
 show(`<h3>📋 Contar existencia</h3>`+
-L.map((z,i)=>`<div class="row it"><span><b>${E(z.x.n)}</b><div class="m">${z.ex==null?(z.x.md=='v'?'Revisa las ventas: salieron más de las que había':'Cerrado en modo Final'):'Debería haber '+un(z.ex)}</div></span>${z.ex==null?'':`<input id="cx${i}" type="number" inputmode="decimal" min="0" placeholder="${un(z.ex)}" style="width:100px;margin:0">`}</div>`).join('')+
+L.map((z,i)=>`<div class="row it"><span><b>${E(z.x.n)}</b><div class="m">${z.ex==null?(z.x.md=='v'?'Revisa las ventas: salieron más de las que había':'Cerrado en modo Final'):'Debería haber '+un(z.ex)}</div></span>${z.ex==null?'':`<input id="cx${i}" type="number" inputmode="decimal" min="0" placeholder="${un(z.ex)}"${vals&&vals[i]!=null?' value="'+E(vals[i])+'"':''} style="width:100px;margin:0">`}</div>`).join('')+
 `<button class="b" style="margin-top:12px" onclick="cexOk()">Guardar conteo</button><button class="s" onclick="cm()">Cancelar</button>`)}
-async function cexOk(){const e=gE(),p=opn(e);if(!p)return;const L=cexL(),out=[];
-for(let i=0;i<L.length;i++){const z=L[i],el=G('cx'+i);if(!el||z.ex==null)continue;const t=String(el.value).trim().replace(',','.');if(t==='')continue;const q=+t;
-if(!isFinite(q)||q<0)return say('Cantidad no válida en "'+z.x.n+'".');out.push({z,q,d:Math.round((q-z.ex)*1e6)/1e6})}
+var CXS=null;
+function cexSug(dif){const P=dif.filter(o=>o.d>0&&o.pr>0),N=dif.filter(o=>o.d<0&&o.pr>0);if(!P.length||!N.length||P.length+N.length>14)return[];
+const subs=A=>{const R=[],n=A.length;for(let i=0;i<n;i++){R.push([[i],A[i].v]);for(let j=i+1;j<n;j++){R.push([[i,j],A[i].v+A[j].v]);for(let k=j+1;k<n;k++)R.push([[i,j,k],A[i].v+A[j].v+A[k].v])}}return R};
+const SP=subs(P),SN=subs(N),M=[];SP.forEach(a=>SN.forEach(b=>{if(Math.abs(a[1]+b[1])<=0.01)M.push({p:a[0],n:b[0],sz:a[0].length+b[0].length})}));
+M.sort((x,y)=>x.sz-y.sz);const us=new Set(),R=[],tf=A=>A.map(o=>un(Math.abs(o.d))+' de '+E(o.z.x.n)).join(' + '),sold=o=>(o.z.x.vr||[]).filter(y=>!y.aj&&!y.tr&&y.fi==null).reduce((a,y)=>a+(+y.q||0),0);
+M.forEach(m=>{if(m.p.some(i=>us.has('p'+i))||m.n.some(i=>us.has('n'+i)))return;m.p.forEach(i=>us.add('p'+i));m.n.forEach(i=>us.add('n'+i));
+const PP=m.p.map(i=>P[i]),NN=m.n.map(i=>N[i]),tot=PP.reduce((a,o)=>a+o.v,0),bad=PP.filter(o=>sold(o)<o.d-1e-9);
+R.push({t:'Faltan '+tf(NN)+' y sobran '+tf(PP)+' ('+$(tot)+' en cada lado).'+(bad.length?' <span class="m">No se puede corregir sola: no hay ventas de '+bad.map(o=>E(o.z.x.n)).join(', ')+' para quitar.</span>':''),P:PP,N:NN,fix:!bad.length})});
+if(R.length){const rest=[...P.filter((o,i)=>!us.has('p'+i)),...N.filter((o,i)=>!us.has('n'+i))];if(rest.length){const nt=Math.round(rest.reduce((a,o)=>a+o.v,0)*100)/100;R.push({t:'Sin explicar: '+rest.map(o=>E(o.z.x.n)+' ('+(o.d>0?'+':'−')+un(Math.abs(o.d))+')').join(', ')+(Math.abs(nt)<0.005?'.':' · queda un '+(nt>0?'sobrante':'faltante')+' de '+$(Math.abs(nt))+'.'),fix:false})}}
+return R}
+function cexShow(){const S=CXS;if(!S)return;const dif=S.dif,net=Math.round(dif.reduce((a,o)=>a+o.v,0)*100)/100,ok=Math.abs(net)<0.005,sug=cexSug(dif),sp=dif.some(o=>!(o.pr>0));S.sug=sug;
+const vt=ok?['✅','En dinero todo cuadra','ok','Lo que sobra compensa lo que falta: parece un cambio de producto al anotar, no una pérdida.']:net>0?['📈','Sobrante de '+$(net),'ok','Hay más mercancía (en valor) de la que debería haber.']:['📉','Faltante de '+$(-net),'no','Falta mercancía (en valor) respecto a lo que debería haber.'];
+show(`<h3>Resultado del conteo</h3><div class="card a-${vt[2]}" style="margin:8px 0"><div style="font-size:22px;font-weight:800">${vt[0]} ${vt[1]}</div><div class="m">${vt[3]}</div></div><div class="m" style="margin-bottom:4px">Valorado a precio de venta${sp?' · los productos sin precio no se pudieron valorar':''}</div>`+
+dif.map(o=>`<div class="row it"><span><b>${E(o.z.x.n)}</b><div class="m">Había ${un(o.z.ex)} · contaste ${un(o.q)}</div></span><b class="${o.d>0?'ok':'no'}">${o.d>0?'+':'−'}${un(Math.abs(o.d))}${o.pr>0?' · '+$(Math.abs(o.v)):''}</b></div>`).join('')+
+(sug.length?`<div class="sec">Posibles confusiones al anotar</div>`+sug.map((m,k)=>`<div class="m" style="margin:8px 0">• ${m.t}</div>${m.fix?`<button class="s" onclick="cexFix(${k})">🔧 Corregir como cambio de referencia</button>`:''}`).join(''):'')+
+`<button class="b" style="margin-top:12px" onclick="cexSave()">Guardar ajustes</button><button class="s" onclick="cex(CXS&&CXS.vals)">Corregir números</button><button class="s" onclick="cm();r()">Cancelar</button>`)}
+async function cexOk(){const e=gE(),p=opn(e);if(!p)return;const L=cexL(),out=[],vals={};
+for(let i=0;i<L.length;i++){const z=L[i],el=G('cx'+i);if(!el||z.ex==null)continue;const t=String(el.value).trim().replace(',','.');if(t==='')continue;vals[i]=el.value;const q=+t;
+if(!isFinite(q)||q<0)return say('Cantidad no válida en "'+z.x.n+'".');const d=Math.round((q-z.ex)*1e6)/1e6,pr=+curPrice(z.x)||0;out.push({z,q,d,pr,v:Math.round(d*pr*100)/100})}
 if(!out.length)return toast('No escribiste ninguna cantidad.');
 const dif=out.filter(o=>o.d!=0);
-if(dif.length&&!await ask('Se registrarán estos ajustes:\n\n'+dif.map(o=>'• '+o.z.x.n+': había '+un(o.z.ex)+', contaste '+un(o.q)+' ('+(o.d>0?'+':'−')+un(Math.abs(o.d))+')').join('\n')+'\n\n¿Guardar?',{ok:'Guardar'}))return;
-dif.forEach(o=>{cexAdj(o.z.x,o.d);lg(e,'Contó existencia de "'+o.z.x.n+'": había '+un(o.z.ex)+', contó '+un(o.q))});
-sv();cm();r();toast(dif.length?('Conteo guardado: '+dif.length+' ajuste(s)'):'Todo coincide con la app',4000)}
+if(!dif.length){sv();cm();r();return toast('Todo coincide con la app',4000)}
+CXS={dif,vals};cexShow()}
+function cexFix(k){const e=gE(),p=opn(e),S=CXS;if(!S||!p)return;const m=(S.sug||[])[k];if(!m||!m.fix)return;
+m.N.forEach(o=>{const x=o.z.x;x.vr=x.vr||[];x.vr.push({id:nid(),q:-o.d,w:'Conteo',ts:Date.now()});lg(e,'Corrigió un cambio de referencia: añadió '+un(-o.d)+' vendidas de "'+x.n+'"')});
+m.P.forEach(o=>{const x=o.z.x;let rem=o.d;(x.vr||[]).filter(y=>!y.aj&&!y.tr&&y.fi==null).sort((a,b)=>(b.ts||0)-(a.ts||0)).forEach(y=>{if(rem<=1e-9)return;const q0=+y.q||0,t=Math.min(q0,rem);rem-=t;if(t>=q0-1e-9){x.vr=x.vr.filter(z=>z!==y);e.dl=e.dl||[];e.dl.push(String(y.id))}else y.q=Math.round((q0-t)*1e6)/1e6});lg(e,'Corrigió un cambio de referencia: quitó '+un(o.d)+' vendidas de "'+x.n+'"')});
+const done=new Set([...m.N,...m.P]);S.dif=S.dif.filter(o=>!done.has(o));sv();
+if(!S.dif.length){CXS=null;cm();r();return toast('Cambio de referencia corregido',4000)}
+cexShow();toast('Corregido. Revisa lo que queda.',3000)}
+function cexSave(){const e=gE(),S=CXS;if(!S)return;S.dif.forEach(o=>{cexAdj(o.z.x,o.d);lg(e,'Contó existencia de "'+o.z.x.n+'": había '+un(o.z.ex)+', contó '+un(o.q))});CXS=null;sv();cm();r();toast('Conteo guardado: '+S.dif.length+' ajuste(s)',4000)}
 function b64(u){let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)}
 async function shareXl(){const x=window._xl,C=window.Capacitor;if(!x||!C)return;try{const np=(a,b,o)=>C.Plugins&&C.Plugins[a]&&C.Plugins[a][b]?C.Plugins[a][b](o):C.nativePromise(a,b,o);
 const w=await np('Filesystem','writeFile',{path:x.fn,data:x.d,directory:'CACHE'});
@@ -773,7 +795,7 @@ acs();
 r();setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script>(function(){
-var APP_V=89,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=91,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
