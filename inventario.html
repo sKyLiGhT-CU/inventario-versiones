@@ -228,7 +228,7 @@ const busy=()=>!!G('md').innerHTML||(document.activeElement&&document.activeElem
 let QS=null,tT=null;
 function toast(m,ms){let t=document.getElementById('tst');if(!t){t=document.createElement('div');t.id='tst';t.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:99;background:#0f172a;color:#fff;padding:12px 14px;border-radius:12px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.35)';document.body.appendChild(t)}t.textContent=m;t.style.display='block';clearTimeout(tT);tT=setTimeout(()=>{t.style.display='none'},ms||5000)}
 const withT=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('La base de datos no responde. Revisa tu internet.')),ms))]);
-const hint=er=>{const m=String(er&&er.message||er);if(/Failed to fetch|NetworkError|Load failed|network/i.test(m))return 'No hay conexión con la base de datos. Revisa tu internet o tu VPN.';if(/PGRST202|could not find the function/i.test(m))return 'Faltan las funciones SQL en la base de datos. '+m;if(/401|403|JWT|apikey/i.test(m))return 'La base de datos rechazó la clave. '+m;return m};
+const hint=er=>{const m=String(er&&er.message||er);if(/actualiz/i.test(m)){setTimeout(()=>{window.invChk&&window.invChk()},300);return m+' Buscando la versión nueva…'}if(/Failed to fetch|NetworkError|Load failed|network/i.test(m))return 'No hay conexión con la base de datos. Revisa tu internet o tu VPN.';if(/PGRST202|could not find the function/i.test(m))return 'Faltan las funciones SQL en la base de datos. '+m;if(/401|403|JWT|apikey/i.test(m))return 'La base de datos rechazó la clave. '+m;return m};
 const setLS=c=>{try{const o=ld('inv2s',{});o[c]=Date.now();localStorage.setItem('inv2s',JSON.stringify(o))}catch(e){}};
 const lastSync=c=>{const t=(ld('inv2s',{})||{})[c];return t?'Última sincronización: '+new Date(t).toLocaleString('es',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Aún no se ha sincronizado desde este teléfono'};
 /* Generador QR minimo (version 1, nivel M, modo byte). Hasta 14 caracteres. */
@@ -359,7 +359,7 @@ function invSet(v){SF=SF==v?'':v;r()}
 function invChips(e,p){let b=0,a=0;p.ps.forEach(x=>{const t=invState(x);if(t)b++;if(t=='a')a++});const c=(k,t)=>'<button class="'+(SF==k?'b':'s')+'" style="margin:0;padding:6px 12px;font-size:13px;width:auto" onclick="invSet(\''+k+'\')">'+t+'</button>';const x1=(b||SF=='b')?c('b','⚠️ Bajo stock ('+b+')'):'',x2=(a||SF=='a')?c('a','🚫 Agotados ('+a+')'):'';if(!x1&&!x2)return '';return '<div style="display:flex;gap:6px;margin:8px 12px 0;flex-wrap:wrap">'+x1+x2+'</div>'}
 const fdBal=e=>{const m=new Map();(e.fd||[]).forEach(x=>{const k=fz(x.c),o=m.get(k)||{k,c:x.c,b:0,L:[]};o.b+=+x.m||0;o.L.push(x);m.set(k,o)});return[...m.values()].map(o=>(o.b=Math.round(o.b*100)/100,o))};
 const fdTot=e=>fdBal(e).reduce((a,o)=>a+(o.b>0.005?o.b:0),0);
-const fdBtn=e=>(e.fd||[]).length?'<button class="s" onclick="fdv()">💳 Por cobrar · '+$(fdTot(e))+'</button>':'';
+const fdBtn=e=>fdBal(e).some(o=>Math.abs(o.b)>0.005)?'<button class="s" onclick="fdv()">💳 Por cobrar · '+$(fdTot(e))+'</button>':'';
 const ljn=()=>{try{return localStorage.getItem('inv2jn')||''}catch(e){return ''}};
 const fdK=k=>encodeURIComponent(k).replace(/'/g,'%27');
 function fdv(){const e=gE();if(!e)return;const L=fdBal(e).filter(o=>Math.abs(o.b)>0.005).sort((a,b)=>b.b-a.b);show('<h3>💳 Por cobrar</h3>'+(L.length?L.map(o=>'<div class="row it" onclick="fdc(\''+fdK(o.k)+'\')"><span>'+E(o.c)+'</span>'+(o.b<0?'<b class="ok">a favor '+$(-o.b)+'</b>':'<b class="no">'+$(o.b)+'</b>')+'</div>').join('')+'<div class="row" style="margin-top:8px"><b>Total</b><b>'+$(fdTot(e))+'</b></div>':'<div class="m">Nadie te debe nada.</div>')+'<button class="s" onclick="cm()">Cerrar</button>')}
@@ -682,8 +682,7 @@ const sumRow=(k,t,lab)=>({k,c:[lab,q(t.ini),z(t.ent),z(t.aj),q(t.tot),q(t.fin),q
 R.forEach(r=>{const id=eid(r);if(id!==(S&&S.id)){flush();S={id,ini:0,ent:0,aj:0,tot:0,fin:0,v:0,tr:0,fi:0,imp:0,cos:0,g:0};cur=r.l;if(multi)rows.push({k:'g',c:[r.l]})}
 for(const k in T){T[k]+=r[k];S[k]+=r[k]}
 const pt=ptxt(r.pb);rows.push({c:[r.n,q(r.ini),z(r.ent),z(r.aj),q(r.tot),q(r.fin),q(r.v),z(r.tr),z(r.fi),$(r.np),$(r.imp),$(r.cos),$(r.g)]})});
-flush();rows.push(sumRow('t',T,'TOTAL'));d.table(C,rows);
-if(!pf){const F=fdNet(a,b,ef),Z=fdPend(ef);if(F.f>0||F.c>0||Z>0||Math.abs(T.fi)>1e-9){d.gap(14);d.table([{h:'Fiado',w:300},{h:'Importe',w:120,a:'r'}],[{c:['Fiado entregado en el período',$(F.f)]},{c:['Cobrado en el período',$(F.c)]},{k:'t',c:['Por cobrar hasta hoy',$(Z)]}],{maxW:420})}}
+flush();rows.push(sumRow('t',T,'TOTAL'));if(!rows.some(r=>r.c.length>8&&r.c[8]!=='')){C.splice(8,1);rows.forEach(r=>{if(r.c.length>8)r.c.splice(8,1)})}d.table(C,rows);
 const nw=new Date(),p2=x=>String(x).padStart(2,'0');
 return{n:R.length,bytes:d.done('Inventario · generado '+fd(td())+' '+p2(nw.getHours())+':'+p2(nw.getMinutes()))}}
 
@@ -774,7 +773,7 @@ acs();
 r();setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script>(function(){
-var APP_V=87,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=88,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -784,6 +783,9 @@ setTimeout(function(){if(!err)d('try')},2500);
 /* Aviso de que se actualizó */
 try{var seen=+g('seen')||0;if(seen&&APP_V>seen&&typeof toast==='function')setTimeout(function(){toast('Actualizado a v'+APP_V)},1200);s('seen',String(APP_V))}catch(e){}
 var busy=false;
+function ready(v){try{var b=document.getElementById('updbar');if(!b){b=document.createElement('div');b.id='updbar';b.style.cssText='position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:97;background:#0f172a;color:#fff;padding:10px 12px 10px 14px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:14px';document.body.appendChild(b)}
+b.innerHTML='<span>🔄 Nueva versión v'+v+' lista</span><span style="display:flex;gap:6px"><button id="updl" style="background:transparent;border:0;color:#cbd5e1;font-size:14px;padding:6px 8px">Luego</button><button id="updg" style="background:#fff;border:0;color:#0f172a;border-radius:999px;font-weight:700;font-size:14px;padding:7px 14px">Actualizar</button></span>';
+document.getElementById('updg').onclick=function(){location.reload()};document.getElementById('updl').onclick=function(){b.style.display='none'}}catch(e){}}
 function chk(){
  if(busy||!navigator.onLine)return;
  if(typeof LSZ!=='undefined'&&LSZ>4.4e6)return;
@@ -793,11 +795,11 @@ function chk(){
   var v=+j.v;if(!(v>cur)||v===bad)return;
   return fetch(U+'inventario.html?t='+Date.now(),{cache:'no-store',signal:ac.signal}).then(function(r){return r.ok?r.text():Promise.reject()}).then(function(h){
    if(h.length<20000||h.indexOf('</html>')<0||h.indexOf('APP_V='+v+',')<0)return;
-   try{localStorage.setItem(K+'html',h);localStorage.setItem(K+'ver',String(v));d('try')}catch(e){d('html');d('ver')}
+   try{localStorage.setItem(K+'html',h);localStorage.setItem(K+'ver',String(v));d('try');ready(v)}catch(e){d('html');d('ver')}
   });
  }).catch(function(){}).then(function(){clearTimeout(to);busy=false});
 }
-setTimeout(chk,5000);
+window.invChk=chk;setTimeout(chk,5000);setTimeout(function(){var pv=+g('ver')||0;if(pv>APP_V&&pv!==(+g('bad')||0))ready(pv)},4000);
 window.addEventListener('online',function(){setTimeout(chk,2000)});
 })();
 </script>
