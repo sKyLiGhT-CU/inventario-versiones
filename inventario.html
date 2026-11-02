@@ -822,7 +822,7 @@ acs();
 r();setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script>(function(){
-var APP_V=95,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=96,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -832,7 +832,7 @@ setTimeout(function(){if(!err)d('try')},2500);
 /* Aviso de que se actualizó */
 try{var seen=+g('seen')||0;if(seen&&APP_V>seen&&typeof toast==='function')setTimeout(function(){toast('Actualizado a v'+APP_V)},1200);s('seen',String(APP_V))}catch(e){}
 var busy=false;
-function ready(v){try{var b=document.getElementById('updbar');if(!b){b=document.createElement('div');b.id='updbar';b.style.cssText='position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:97;background:#0f172a;color:#fff;padding:10px 12px 10px 14px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:14px';document.body.appendChild(b)}
+function ready(v){return;try{var b=document.getElementById('updbar');if(!b){b=document.createElement('div');b.id='updbar';b.style.cssText='position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:97;background:#0f172a;color:#fff;padding:10px 12px 10px 14px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:14px';document.body.appendChild(b)}
 b.innerHTML='<span>🔄 Nueva versión v'+v+' lista</span><span style="display:flex;gap:6px"><button id="updl" style="background:transparent;border:0;color:#cbd5e1;font-size:14px;padding:6px 8px">Luego</button><button id="updg" style="background:#fff;border:0;color:#0f172a;border-radius:999px;font-weight:700;font-size:14px;padding:7px 14px">Actualizar</button></span>';
 document.getElementById('updg').onclick=function(){location.reload()};document.getElementById('updl').onclick=function(){b.style.display='none'}}catch(e){}}
 function chk(cb){
@@ -852,7 +852,7 @@ function chk(cb){
  }).catch(function(){return 'red'}).then(done);
 }
 window.invUpd=function(){chk(function(st){var m=String(st).split(':'),k=m[0],v=m[1],T={
- ok:'Se descargó la v'+v+'. Toca Actualizar en la barra de arriba.',
+ ok:'Se descargó la v'+v+'. Se aplicará cuando cierres la app del todo y la vuelvas a abrir.',
  actual:'Tienes la v'+APP_V+' y en GitHub la versión publicada es la v'+v+'. Si acabas de subir una nueva, revisa que version.json diga el número nuevo.',
  offline:'No hay internet.',espacio:'El teléfono tiene poco espacio guardado y no se puede bajar la actualización. Guarda un respaldo y libera datos.',
  sinespacio:'No hubo espacio para guardar la actualización.',mala:'La v'+v+' falló antes en este teléfono y se omite.',
@@ -1026,12 +1026,12 @@ window.pnBack=function(){reload()};
 /* ===== Auditoría de locales (solo con la clave del panel; cada consulta queda registrada) ===== */
 var AUD=null;
 function dtm(t){try{return new Date(t).toLocaleString('es',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
-window.pnAud=async function(){try{var r=await call('panel_locales',{});AUD=r.locales||[];audList()}catch(e){await say('No se pudo cargar los locales. Falta crear las funciones nuevas o no hay internet.')}};
+window.pnAud=async function(){try{var r=await call('panel_locales',{});AUD=r.locales||[];audList()}catch(e){await say('No se pudo cargar los locales: '+String(e&&e.message||e).slice(0,160))}};
 window.audList=function(){var L=AUD||[];
  show(back()+'<h3>🔎 Locales ('+L.length+')</h3><div class="m">Cada vez que abres uno queda anotado en un registro.</div>'
  +L.map(function(x,i){return'<div class="it" onclick="pnLoc('+i+')"><b>'+E(x.nombre||'(sin nombre)')+'</b>'+(x.tiene_dueno?'':' <span class="m">· sin dueño</span>')+'<div class="m">'+x.productos_total+' producto(s) · '+x.registros+' registro(s) · '+Math.round(x.bytes/1024)+' KB'+' · '+x.ver+' sinc.'+(x.dueno_ultima?' · usado '+ago(x.dueno_ultima):'')+(x.dueno_nombre?' · '+E(x.dueno_nombre):'')+(x.dueno_version?' · v'+x.dueno_version:'')+(x.miembros?' · '+x.miembros+' trabajador(es)':'')+(x.pendientes?' ('+x.pendientes+' pendiente)':'')+'</div></div>'}).join('')
  +'<button class="s" onclick="pnLog()" style="margin-top:10px">Ver quién consultó qué</button><button class="s" onclick="pnBack()" style="margin-top:8px">Volver al panel</button>')};
-window.pnLoc=async function(i){var x=(AUD||[])[i];if(!x)return;try{locView(await call('panel_local',{p_code:x.code}))}catch(e){await say('No se pudo abrir el local.')}};
+window.pnLoc=async function(i){var x=(AUD||[])[i];if(!x)return;try{locView(await call('panel_local',{p_code:x.code}))}catch(e){await say('No se pudo abrir el local: '+String(e&&e.message||e).slice(0,160))}};
 function locView(r){var d=r.data||{},h='<button class="s" onclick="audList()" style="display:inline-block;width:auto;padding:6px 12px;margin-bottom:6px">← Locales</button><h3>'+E(d.n||'Local')+'</h3>';
  h+='<div class="m">'+(r.tiene_dueno?'Con dueño registrado':'<b>Sin dueño registrado</b>: cualquiera con el código entra')+' · versión de datos '+r.ver+'</div>';
  var pr=(d.pr||[]).slice(0,3),sales=[];
@@ -1047,8 +1047,8 @@ function locView(r){var d=r.data||{},h='<button class="s" onclick="audList()" st
 window.pnDel=async function(code){var x=(AUD||[]).filter(function(z){return z.code==code})[0]||{};
  var t=await dlg({msg:(x.ver>30?'⚠️ Este local parece estar en uso ('+x.ver+' sincronizaciones).\n\n':'')+'Eliminar "'+(x.nombre||'sin nombre')+'" de la base de datos.\n\n'+(x.productos_total||0)+' producto(s), '+(x.miembros||0)+' trabajador(es).\nSe guarda una copia por si te equivocas, pero quien lo use perderá el acceso.\n\nEscribe ELIMINAR para confirmar.',input:true,def:'',ok:'Eliminar',cancel:'Cancelar',danger:true});
  if(String(t||'').trim().toUpperCase()!=='ELIMINAR'){if(t!==null&&t!==false&&t!==undefined)await say('No se eliminó: debías escribir ELIMINAR.');return}
- try{await call('panel_borrar_local',{p_code:code});var r=await call('panel_locales',{});AUD=r.locales||[];await say('Local eliminado.');audList()}catch(e){await say('No se pudo eliminar.')}};
-window.pnLog=async function(){try{var r=await call('panel_accesos',{});show('<button class="s" onclick="audList()" style="display:inline-block;width:auto;padding:6px 12px;margin-bottom:6px">← Locales</button><h3>Quién consultó qué</h3>'+((r.accesos||[]).length?(r.accesos||[]).map(function(a){return'<div class="m">'+dtm(a.ts)+' · '+E(a.accion)+(a.detalle?' · '+E(a.detalle):'')+'</div>'}).join(''):'<div class="m">Todavía no hay consultas.</div>'))}catch(e){await say('No se pudo cargar el registro.')}};
+ try{await call('panel_borrar_local',{p_code:code});var r=await call('panel_locales',{});AUD=r.locales||[];await say('Local eliminado.');audList()}catch(e){await say('No se pudo eliminar: '+String(e&&e.message||e).slice(0,160))}};
+window.pnLog=async function(){try{var r=await call('panel_accesos',{});show('<button class="s" onclick="audList()" style="display:inline-block;width:auto;padding:6px 12px;margin-bottom:6px">← Locales</button><h3>Quién consultó qué</h3>'+((r.accesos||[]).length?(r.accesos||[]).map(function(a){return'<div class="m">'+dtm(a.ts)+' · '+E(a.accion)+(a.detalle?' · '+E(a.detalle):'')+'</div>'}).join(''):'<div class="m">Todavía no hay consultas.</div>'))}catch(e){await say('No se pudo cargar el registro: '+String(e&&e.message||e).slice(0,160))}};
 
 window.pnNuevo=async function(){var c=await dlg({msg:'Código de app del cliente (o su nombre)',input:true,ok:'Siguiente',cancel:'Cancelar'});if(c===null||c===false||c===undefined)return;var d=await dlg({msg:'Días de validez (cuentan desde que se activa)',input:true,def:'30',ok:'Generar',cancel:'Cancelar'});d=parseInt(d,10);if(!(d>0))return;try{var code=await call('panel_crear_codigo',{p_cliente:String(c).trim(),p_dias:d});cShow({codigo:code,cliente:String(c).trim(),dias:d,activado:null,anulado:false})}catch(e){await say('No se pudo crear el código.');reload()}};
 window.pnCod=function(code){var c=(LAST&&LAST.codigos||[]).filter(function(x){return x.codigo==code})[0];if(c)cShow(c)};
