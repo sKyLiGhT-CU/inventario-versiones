@@ -631,7 +631,7 @@ const TH=[['auto','Automático','#1d4ed8','#0b1220','#6b9bff'],['esmeralda','Esm
 const curTh=()=>{try{const t=localStorage.getItem('inv2t');return TH.some(x=>x[0]==t)?t:'auto'}catch(e){return'auto'}};
 function setTheme(id){try{localStorage.setItem('inv2t',id)}catch(e){}if(id=='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',id);const m=document.querySelector('meta[name=theme-color]'),t=TH.find(x=>x[0]==id);if(m&&t)m.setAttribute('content',t[2]);th()}
 function th(){const c=curTh();show(`<h3>Cambiar tema</h3>`+TH.map(x=>`<div class="card" style="margin:8px 0;${x[0]==c?'border-color:var(--p)':''}" onclick="setTheme('${x[0]}')"><div class="row"><b>${x[0]==c?'✓ ':''}${x[1]}</b><span style="display:flex;gap:4px"><i style="width:18px;height:18px;border-radius:50%;background:${x[2]};border:1px solid var(--b)"></i><i style="width:18px;height:18px;border-radius:50%;background:${x[3]};border:1px solid var(--b)"></i><i style="width:18px;height:18px;border-radius:50%;background:${x[4]};border:1px solid var(--b)"></i></span></div></div>`).join('')+`<button class="s" onclick="cm()">Cerrar</button>`)}
-function mn(){show(`<h3>Opciones</h3><div class="m ${old()?'no':''}">${lb()?'Último respaldo: '+fd(lb()):'Aún no has guardado un respaldo'}</div>${(()=>{const t=+ld('inv2ab',0);return t?'<div class="m">Respaldo automático en el teléfono: '+fd(iso(new Date(t)))+'</div>':''})()}<div class="m ${LSZ>3.5e6?'no':''}">Espacio usado: ${(LSZ/1e6).toFixed(1)} MB de ~5 MB</div><div class="m">${typeof licTxt==='function'?licTxt():''}</div><button class="s" onclick="cm();syncAll(false)">🔄 Sincronizar todos los locales</button><button class="s" onclick="cm();licAct()">🔑 Activar código</button><button class="s" onclick="cm();tut(0)">❓ Cómo usar la app</button><button class="s" onclick="cm();invBNset()">🏷️ Nombre del negocio (PDF)</button><button class="s" onclick="th()">🎨 Cambiar tema</button>${ld('inv_pk','')?'<button class="s" onclick="cm();invPanel()">📊 Panel de uso</button>':''}<button class="b" onclick="guardar()">Guardar respaldo en Drive</button><label class="s" style="display:block;text-align:center;margin:8px 0 0">Restaurar desde respaldo<input type="file" accept=".json" onchange="imp(event)" hidden></label>${hp()?'<button class="s" onclick="undo()">Deshacer última restauración</button>':''}<button class="s" onclick="cm()">Cerrar</button>`)}
+function mn(){show(`<h3>Opciones</h3><div class="m ${old()?'no':''}">${lb()?'Último respaldo: '+fd(lb()):'Aún no has guardado un respaldo'}</div>${(()=>{const t=+ld('inv2ab',0);return t?'<div class="m">Respaldo automático en el teléfono: '+fd(iso(new Date(t)))+'</div>':''})()}<div class="m ${LSZ>3.5e6?'no':''}">Espacio usado: ${(LSZ/1e6).toFixed(1)} MB de ~5 MB</div><div class="m">${typeof licTxt==='function'?licTxt():''}</div><button class="s" onclick="cm();syncAll(false)">🔄 Sincronizar todos los locales</button><button class="s" onclick="cm();licAct()">🔑 Activar código</button><button class="s" onclick="cm();tut(0)">❓ Cómo usar la app</button><button class="s" onclick="cm();invBNset()">🏷️ Nombre del negocio (PDF)</button><button class="s" onclick="th()">🎨 Cambiar tema</button><button class="s" onclick="cm();invUpd()">🔄 Buscar actualización (v${window.APP_V_||'?'})</button>${ld('inv_pk','')?'<button class="s" onclick="cm();invPanel()">📊 Panel de uso</button>':''}<button class="b" onclick="guardar()">Guardar respaldo en Drive</button><label class="s" style="display:block;text-align:center;margin:8px 0 0">Restaurar desde respaldo<input type="file" accept=".json" onchange="imp(event)" hidden></label>${hp()?'<button class="s" onclick="undo()">Deshacer última restauración</button>':''}<button class="s" onclick="cm()">Cerrar</button>`)}
 const dump=()=>JSON.stringify({v:'inventario',D,did:(window.DID?DID():null)});
 function ex(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dump()],{type:'application/json'}));a.download='respaldo-inventario-'+td()+'.json';a.click();mkb();r();cm()}
 async function guardar(){const C=window.Capacitor,n='respaldo-inventario-'+td()+'.json';
@@ -822,7 +822,7 @@ acs();
 r();setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script>(function(){
-var APP_V=94,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=95,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -835,19 +835,31 @@ var busy=false;
 function ready(v){try{var b=document.getElementById('updbar');if(!b){b=document.createElement('div');b.id='updbar';b.style.cssText='position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:97;background:#0f172a;color:#fff;padding:10px 12px 10px 14px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:14px';document.body.appendChild(b)}
 b.innerHTML='<span>🔄 Nueva versión v'+v+' lista</span><span style="display:flex;gap:6px"><button id="updl" style="background:transparent;border:0;color:#cbd5e1;font-size:14px;padding:6px 8px">Luego</button><button id="updg" style="background:#fff;border:0;color:#0f172a;border-radius:999px;font-weight:700;font-size:14px;padding:7px 14px">Actualizar</button></span>';
 document.getElementById('updg').onclick=function(){location.reload()};document.getElementById('updl').onclick=function(){b.style.display='none'}}catch(e){}}
-function chk(){
- if(busy||!navigator.onLine)return;
- if(typeof LSZ!=='undefined'&&LSZ>4.4e6)return;
+function chk(cb){
+ var to=null,done=function(st){clearTimeout(to);busy=false;if(typeof cb==='function')cb(st)};
+ if(busy){if(typeof cb==='function')cb('ocupado');return}
+ if(!navigator.onLine){if(typeof cb==='function')cb('offline');return}
+ if(typeof LSZ!=='undefined'&&LSZ>4.4e6){if(typeof cb==='function')cb('espacio');return}
  busy=true;
- var cur=Math.max(APP_V,+g('ver')||0),bad=+g('bad')||0,ac=new AbortController(),to=setTimeout(function(){ac.abort()},20000);
- fetch(U+'version.json?t='+Date.now(),{cache:'no-store',signal:ac.signal}).then(function(r){return r.ok?r.json():Promise.reject()}).then(function(j){
-  var v=+j.v;if(!(v>cur)||v===bad)return;
-  return fetch(U+'inventario.html?t='+Date.now(),{cache:'no-store',signal:ac.signal}).then(function(r){return r.ok?r.text():Promise.reject()}).then(function(h){
-   if(h.length<20000||h.indexOf('</html>')<0||h.indexOf('APP_V='+v+',')<0)return;
-   try{localStorage.setItem(K+'html',h);localStorage.setItem(K+'ver',String(v));d('try');ready(v)}catch(e){d('html');d('ver')}
+ var cur=Math.max(APP_V,+g('ver')||0),bad=+g('bad')||0,ac=new AbortController();to=setTimeout(function(){ac.abort()},20000);
+ fetch(U+'version.json?t='+Date.now(),{cache:'no-store',signal:ac.signal}).then(function(r){return r.ok?r.json():Promise.reject('red')}).then(function(j){
+  var v=+j.v;if(!(v>0))return 'invalida';if(v===bad)return 'mala:'+v;if(!(v>cur))return 'actual:'+v;
+  return fetch(U+'inventario.html?t='+Date.now(),{cache:'no-store',signal:ac.signal}).then(function(r){return r.ok?r.text():Promise.reject('red')}).then(function(h){
+   if(h.length<20000||h.indexOf('</html>')<0)return 'incompleto';
+   if(h.indexOf('APP_V='+v+',')<0)return 'noconcuerda:'+v;
+   try{localStorage.setItem(K+'html',h);localStorage.setItem(K+'ver',String(v));d('try');ready(v);return 'ok:'+v}catch(e){d('html');d('ver');return 'sinespacio'}
   });
- }).catch(function(){}).then(function(){clearTimeout(to);busy=false});
+ }).catch(function(){return 'red'}).then(done);
 }
+window.invUpd=function(){chk(function(st){var m=String(st).split(':'),k=m[0],v=m[1],T={
+ ok:'Se descargó la v'+v+'. Toca Actualizar en la barra de arriba.',
+ actual:'Tienes la v'+APP_V+' y en GitHub la versión publicada es la v'+v+'. Si acabas de subir una nueva, revisa que version.json diga el número nuevo.',
+ offline:'No hay internet.',espacio:'El teléfono tiene poco espacio guardado y no se puede bajar la actualización. Guarda un respaldo y libera datos.',
+ sinespacio:'No hubo espacio para guardar la actualización.',mala:'La v'+v+' falló antes en este teléfono y se omite.',
+ red:'No se pudo conectar con GitHub.',invalida:'El archivo version.json de GitHub no es válido.',
+ incompleto:'El archivo inventario.html de GitHub está incompleto o es muy corto.',
+ noconcuerda:'version.json dice v'+v+', pero inventario.html no tiene "var APP_V='+v+',". Deben coincidir.',ocupado:'Ya se está buscando, espera un momento.'};
+ say(T[k]||('Resultado: '+st))})};
 window.invChk=chk;setTimeout(chk,5000);setTimeout(function(){var pv=+g('ver')||0;if(pv>APP_V&&pv!==(+g('bad')||0))ready(pv)},4000);
 window.addEventListener('online',function(){setTimeout(chk,2000)});
 })();
@@ -1017,7 +1029,7 @@ function dtm(t){try{return new Date(t).toLocaleString('es',{day:'2-digit',month:
 window.pnAud=async function(){try{var r=await call('panel_locales',{});AUD=r.locales||[];audList()}catch(e){await say('No se pudo cargar los locales. Falta crear las funciones nuevas o no hay internet.')}};
 window.audList=function(){var L=AUD||[];
  show(back()+'<h3>🔎 Locales ('+L.length+')</h3><div class="m">Cada vez que abres uno queda anotado en un registro.</div>'
- +L.map(function(x,i){return'<div class="it" onclick="pnLoc('+i+')"><b>'+E(x.nombre||'(sin nombre)')+'</b>'+(x.tiene_dueno?'':' <span class="m">· sin dueño</span>')+'<div class="m">'+x.productos_total+' producto(s) · '+x.registros+' registro(s) · '+Math.round(x.bytes/1024)+' KB'+(x.dueno_nombre?' · '+E(x.dueno_nombre):'')+(x.dueno_version?' · v'+x.dueno_version:'')+(x.miembros?' · '+x.miembros+' trabajador(es)':'')+(x.pendientes?' ('+x.pendientes+' pendiente)':'')+'</div></div>'}).join('')
+ +L.map(function(x,i){return'<div class="it" onclick="pnLoc('+i+')"><b>'+E(x.nombre||'(sin nombre)')+'</b>'+(x.tiene_dueno?'':' <span class="m">· sin dueño</span>')+'<div class="m">'+x.productos_total+' producto(s) · '+x.registros+' registro(s) · '+Math.round(x.bytes/1024)+' KB'+' · '+x.ver+' sinc.'+(x.dueno_ultima?' · usado '+ago(x.dueno_ultima):'')+(x.dueno_nombre?' · '+E(x.dueno_nombre):'')+(x.dueno_version?' · v'+x.dueno_version:'')+(x.miembros?' · '+x.miembros+' trabajador(es)':'')+(x.pendientes?' ('+x.pendientes+' pendiente)':'')+'</div></div>'}).join('')
  +'<button class="s" onclick="pnLog()" style="margin-top:10px">Ver quién consultó qué</button><button class="s" onclick="pnBack()" style="margin-top:8px">Volver al panel</button>')};
 window.pnLoc=async function(i){var x=(AUD||[])[i];if(!x)return;try{locView(await call('panel_local',{p_code:x.code}))}catch(e){await say('No se pudo abrir el local.')}};
 function locView(r){var d=r.data||{},h='<button class="s" onclick="audList()" style="display:inline-block;width:auto;padding:6px 12px;margin-bottom:6px">← Locales</button><h3>'+E(d.n||'Local')+'</h3>';
@@ -1031,7 +1043,11 @@ function locView(r){var d=r.data||{},h='<button class="s" onclick="audList()" st
  if(sales.length)h+='<div class="m" style="margin:12px 0 4px"><b>Últimas ventas</b></div>'+sales.slice(0,15).map(function(v){return'<div class="m">'+dtm(v.t)+' · '+E(v.n||'?')+' · '+un(v.q)+' u · '+E(v.w||'?')+'</div>'}).join('');
  var fd=d.fd||[];if(fd.length){var by={};fd.forEach(function(y){var k=String(y.c||'?');by[k]=(by[k]||0)+(+y.m||0)});h+='<div class="m" style="margin:12px 0 4px"><b>Fiado</b></div>'+Object.keys(by).filter(function(k){return Math.abs(by[k])>0.005}).map(function(k){return'<div class="m">'+E(k)+': '+$(by[k])+'</div>'}).join('')}
  var mb=r.miembros||[];if(mb.length)h+='<div class="m" style="margin:12px 0 4px"><b>Trabajadores</b></div>'+mb.map(function(x){return'<div class="m">'+E(x.nombre||'?')+' · '+E(x.estado)+(x.ultima?' · '+dtm(x.ultima):'')+'</div>'}).join('');
- show(h+'<button class="s" onclick="audList()" style="margin-top:12px">Volver a la lista</button>')}
+ show(h+'<button class="s" onclick="audList()" style="margin-top:12px">Volver a la lista</button><button class="s" onclick="pnDel(\''+E(r.code)+'\')" style="margin-top:8px;color:#b42318;border-color:#b42318">Eliminar este local</button>')}
+window.pnDel=async function(code){var x=(AUD||[]).filter(function(z){return z.code==code})[0]||{};
+ var t=await dlg({msg:(x.ver>30?'⚠️ Este local parece estar en uso ('+x.ver+' sincronizaciones).\n\n':'')+'Eliminar "'+(x.nombre||'sin nombre')+'" de la base de datos.\n\n'+(x.productos_total||0)+' producto(s), '+(x.miembros||0)+' trabajador(es).\nSe guarda una copia por si te equivocas, pero quien lo use perderá el acceso.\n\nEscribe ELIMINAR para confirmar.',input:true,def:'',ok:'Eliminar',cancel:'Cancelar',danger:true});
+ if(String(t||'').trim().toUpperCase()!=='ELIMINAR'){if(t!==null&&t!==false&&t!==undefined)await say('No se eliminó: debías escribir ELIMINAR.');return}
+ try{await call('panel_borrar_local',{p_code:code});var r=await call('panel_locales',{});AUD=r.locales||[];await say('Local eliminado.');audList()}catch(e){await say('No se pudo eliminar.')}};
 window.pnLog=async function(){try{var r=await call('panel_accesos',{});show('<button class="s" onclick="audList()" style="display:inline-block;width:auto;padding:6px 12px;margin-bottom:6px">← Locales</button><h3>Quién consultó qué</h3>'+((r.accesos||[]).length?(r.accesos||[]).map(function(a){return'<div class="m">'+dtm(a.ts)+' · '+E(a.accion)+(a.detalle?' · '+E(a.detalle):'')+'</div>'}).join(''):'<div class="m">Todavía no hay consultas.</div>'))}catch(e){await say('No se pudo cargar el registro.')}};
 
 window.pnNuevo=async function(){var c=await dlg({msg:'Código de app del cliente (o su nombre)',input:true,ok:'Siguiente',cancel:'Cancelar'});if(c===null||c===false||c===undefined)return;var d=await dlg({msg:'Días de validez (cuentan desde que se activa)',input:true,def:'30',ok:'Generar',cancel:'Cancelar'});d=parseInt(d,10);if(!(d>0))return;try{var code=await call('panel_crear_codigo',{p_cliente:String(c).trim(),p_dias:d});cShow({codigo:code,cliente:String(c).trim(),dias:d,activado:null,anulado:false})}catch(e){await say('No se pudo crear el código.');reload()}};
