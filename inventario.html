@@ -127,7 +127,17 @@ G('dgo').onclick=ev=>{if(ev.target==G('dgo'))dlgEnd(neg)};
 if(o.input){const i=G('dgi');i.value=o.def||'';i.onkeydown=ev=>{if(ev.key=='Enter')k.click()};setTimeout(()=>{try{i.focus();i.select()}catch(e){}},60)}}
 function dlgEnd(v){const z=DLC;if(!z)return;DLC=null;z.res(v);dlgNext()}
 const say=m=>dlg({msg:m,ok:'Entendido'});
-const ask=(m,o)=>dlg({msg:m,ok:(o&&o.ok)||'Aceptar',cancel:'Cancelar',danger:!!(o&&o.danger)});
+const ask=async(m,o)=>{const ok=await dlg({msg:m,ok:(o&&o.ok)||'Aceptar',cancel:'Cancelar',danger:!!(o&&o.danger)});if(ok&&o&&o.ok=='Eliminar')unArm();return ok};
+/* ===== v99: deshacer el último borrado (60 s; se anula si haces otro cambio o se sincroniza) ===== */
+var UDO=null;const UWIN=60000;
+function unArm(){const e=gE();unClear();if(!e)return;try{UDO={id:e.id,s:JSON.stringify(e),t:Date.now(),shown:0}}catch(x){UDO=null}}
+function unHide(){const b=document.getElementById('unb');if(b)b.remove()}
+function unClear(){if(UDO&&UDO.tm)clearTimeout(UDO.tm);UDO=null;unHide()}
+function unShow(){unHide();const b=document.createElement('div');b.id='unb';b.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:99;background:#0f172a;color:#fff;padding:10px 12px;border-radius:12px;font-size:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 6px 20px rgba(0,0,0,.35)';b.innerHTML='<span>Eliminado</span><button style="background:#fff;color:#0f172a;border:0;border-radius:8px;padding:8px 12px;font-weight:700">↩ Deshacer</button>';b.querySelector('button').onclick=unDo;document.body.appendChild(b);UDO.tm=setTimeout(unClear,UWIN)}
+function unTick(){if(!UDO)return;if(!UDO.shown){if(Date.now()-UDO.t>4000){UDO=null;return}UDO.shown=1;unShow();return}unClear();autoSync()}
+function unHold(){return !!UDO&&(UDO.shown||Date.now()-UDO.t<=4000)}
+function unDo(){if(!UDO||!UDO.shown)return;const i=D.est.findIndex(z=>z.id==UDO.id);let o=null;try{o=JSON.parse(UDO.s)}catch(x){}if(i<0||!o){unClear();return}D.est[i]=o;unClear();sv();r();toast('Restaurado',3000)}
+function syncChip(e){if(!e||!e.code)return '';const t=(ld('inv2s',{})||{})[e.code],a=t?Date.now()-t:Infinity;if(a<3*36e5)return '';const h=Math.floor(a/36e5),tx=!t?'sin sincronizar':h<24?'hace '+h+' h':'hace '+Math.floor(h/24)+' d';return '<span class="tag '+(a>=24*36e5?'no':'w')+'" onclick="syncOne(\''+e.id+'\')">🔄 '+tx+'</span>'}
 const prm=(m,d)=>dlg({msg:m,input:1,def:d||'',ok:'Guardar',cancel:'Cancelar'});
 const rl=()=>{try{document.querySelectorAll('.card[onclick]').forEach(c=>{c.setAttribute('role','button');c.setAttribute('tabindex','0')})}catch(e){}};
 try{document.addEventListener('keydown',ev=>{const t=ev.target;if((ev.key=='Enter'||ev.key==' ')&&t&&t.getAttribute&&t.getAttribute('role')=='button'&&t.tagName!='BUTTON'){ev.preventDefault();t.click()}})}catch(e){}
@@ -229,7 +239,7 @@ if(!tx){if(rx||m.dl.includes(String(x.id)))return;lateNew(o,x);return}
 const ie=new Set(((rx&&rx.en)||[]).map(z=>String(z.id)));(lx.en||[]).forEach(y=>{const id=String(y.id);if(y.i||ie.has(id)||m.dl.includes(id)||(typeof o.ke=='string'&&o.ke.includes('|'+id+'|')))return;x.en=(x.en||[]).filter(z=>String(z.id)!=id);tx.en=tx.en||[];tx.en.push(Object.assign({},y,{id:nid()}));m.dl.push(id)})})})}
 let LSZ=0,LWN=0,PERR=0;
 const persist=()=>{try{const s=JSON.stringify(D);localStorage.setItem('inv2',s);PERR=0;LSZ=s.length;if(LSZ>3.5e6&&!LWN){LWN=1;setTimeout(()=>toast('⚠️ La app ocupa '+(LSZ/1e6).toFixed(1)+' MB de unos 5 MB. Guarda un respaldo.',10000),1500)}}catch(e){if(!PERR){PERR=1;say('NO se pudo guardar: el teléfono se quedó sin espacio. Guarda un respaldo ahora (⋮ → Guardar respaldo).')}else toast('⚠️ Sigue sin espacio: los últimos cambios no se guardaron. Guarda un respaldo.',6000)}};
-const sv=()=>{D.est.forEach(e=>{dedupe(e);lateK(e);keepAll(e);if(!e.code&&e.dl&&e.dl.length>200)e.dl=e.dl.filter(dlKeep);stamp(e,false)});persist();autoSync()};
+const sv=()=>{D.est.forEach(e=>{dedupe(e);lateK(e);keepAll(e);if(!e.code&&e.dl&&e.dl.length>200)e.dl=e.dl.filter(dlKeep);stamp(e,false)});persist();autoSync();unTick()};
 /* ===== Fiado: cada venta fiada se une a su deuda; los cobros (abonos) se aplican a las deudas más viejas del cliente ===== */
 function scrubCostos(e){if(!e||e.rol!=='t')return;(e.pr||[]).forEach(function(p){(p.ps||[]).forEach(function(x){if(x.lc)x.lc=0;(x.en||[]).forEach(function(y){if(y.c)y.c=0})})})}
 var FDM=null,FDS='';
@@ -349,7 +359,7 @@ async function syncEst(e){
   }
   throw new Error('Varios teléfonos sincronizaron a la vez. Inténtalo de nuevo.');
 }
-function syncAll(silent){
+function syncAll(silent){unClear();
   if(syncing){if(!silent)toast('Ya hay una sincronización en curso, espera un momento.');else syncQ=true;return}
   const L=D.est.filter(e=>e.code);
   if(!L.length){if(!silent)toast('Ningún local tiene la sincronización activada.');return}
@@ -359,13 +369,13 @@ function syncAll(silent){
     if(!silent){const nz=er?'':news();toast(er?'❌ No se pudo sincronizar: '+hint(er):'✅ Sincronizado correctamente'+nz,er||nz?9000:4000)}
   });
 }
-function syncOne(id){
+function syncOne(id){unClear();
   const e=D.est.find(z=>z.id==id);if(!e)return;
   if(syncing)return toast('Ya hay una sincronización en curso, espera un momento.');
   syncing=true;toast('Sincronizando…',20000);
   withT(syncEst(e),15000).then(()=>{syncDone();const nz=news();toast('✅ Sincronizado correctamente'+nz,nz?9000:4000)},er=>{syncDone();toast('❌ No se pudo sincronizar: '+hint(er),9000)});
 }
-function autoSync(){clearTimeout(stT);stT=setTimeout(()=>syncAll(true),2500)}
+function autoSync(){clearTimeout(stT);stT=setTimeout(()=>syncAll(true),unHold()?UWIN:2500)}
 try{window.addEventListener('online',()=>syncAll(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden)acs()});setTimeout(()=>syncAll(true),1500)}catch(e){}
 const fz=t=>String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 const invM=()=>{try{return JSON.parse(localStorage.getItem('inv2min')||'{}')||{}}catch(e){return {}}};
@@ -471,7 +481,7 @@ return '<div class="hero2"><div class="row" style="align-items:flex-start"><div>
 function tilesHtml(e,p,PG){let b=0,a=0,sv=0;p.ps.forEach(x=>{const t=invState(x);if(t=='b')b++;if(t=='a')a++});PG.forEach(g=>{sv+=pstock(g,td()).c});
 const T=(ic,lb,v,k,on,act)=>'<div class="tile'+(on?' on':'')+'"'+(act?' onclick="'+act+'"':'')+'><i class="ti '+k+'">'+ic+'</i><div><div class="m">'+lb+'</div><b>'+v+'</b></div></div>';
 return '<div class="tiles">'+T('📦','Productos',p.ps.length,'t1')+(wk(e)?'':T('💰','Valor del stock',$(sv),'t2'))+T('⚠️','Bajo stock',b,'t3',SF=='b',(b||SF=='b')?"invSet('b')":'')+T('🚫','Agotados',a,'t4',SF=='a',(a||SF=='a')?"invSet('a')":'')+'</div>'}
-function est(){const e=gE(),p=curP(e);let h=`<header><div class="row"><button class="x" aria-label="Atrás" onclick="atras()">←</button><h1>${E(e.n)}</h1><button class="x" aria-label="Opciones del local" onclick="me()">${!wk(e)&&unseen(e).length?'<span class="no">●</span> ':''}⋮</button></div>`;
+function est(){const e=gE(),p=curP(e);let h=`<header><div class="row"><button class="x" aria-label="Atrás" onclick="atras()">←</button><h1>${E(e.n)}${syncChip(e)}</h1><button class="x" aria-label="Opciones del local" onclick="me()">${!wk(e)&&unseen(e).length?'<span class="no">●</span> ':''}⋮</button></div>`;
 if(!p)return h+'</header><div class="empty"><div style="font-size:46px">📦</div>Aún no hay productos.<br>Toca + para agregar el primero.</div><button class="fab" aria-label="Agregar producto" onclick="np()"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button>';
 const s0=sum(p),s=p.end?s0:Object.assign({},s0,dsum(e)),PG=p.end?null:pinst(e,q=>!q.end||q.end>=add(td(),-7));h+=`<div class="m">${p.end?'Registro cerrado · '+fd(p.start)+' – '+fd(p.end):'Hoy · '+fd(td())}</div>${p.end?'':hoyCard(e,PG)}<div class="st${wk(e)?' w1':''}"${p.end&&(s.n||!p.ps.length)?'':' style="display:none"'}><div><div class="m">Venta</div><b>${$(s.v)}</b></div>${wk(e)?'':`<div><div class="m">Costo</div><b>${$(s.c)}</b></div><div><div class="m">Ganancia</div><b class="${s.g<0?'no':'ok'}">${$(s.g)}</b></div>`}</div><div class="m" style="margin-top:6px">${s.pe?s.pe+' producto(s) sin cierre: no suman a la ganancia':(s.n?'':(p.ps.length?'Solo conteo físico: no suma a la ganancia':''))}</div>${p.end?whoSold(p):''}${p.end?(opn(e)?'':'<button class="s" onclick="nc()">＋ Empezar registro nuevo</button>'):(wk(e)?'':'<button class="s" onclick="cex()">📋 Contar existencia</button>')}${fdBtn(e)}</header>`;
 return h+(!p.end&&p.ps.length?tilesHtml(e,p,PG):'')+(p.ps.length>2?`<input id="sq" type="search" placeholder="Buscar producto..." value="${E(SQ)}" oninput="fp(this.value)" style="width:calc(100% - 24px);margin:10px 12px 0">`:'')+(p.ps.length?p.ps.map(x=>{const k=calc(x);if(!p.end&&!x.fis)return cardV(e,x,k,PG);return`<div class="card ${k.err?'a-no':k.fis?'a-m':!k.done?'a-w':(!wk(e)&&k.g<0?'a-no':'a-ok')}" data-n="${E(fz(x.n))}" onclick="pv('${x.id}')"><div class="row"><b>${k.fis?'📋':'📦'} ${E(x.n)}</b><b class="${k.fis||!k.done||k.err?'m':(!wk(e)&&k.g<0?'no':'ok')}">${k.err?'Revisa el final':k.fis?'Conteo físico':k.done?$(wk(e)?k.ven:k.g):(x.md=='v'?'Sin ventas':'Sin cierre')}</b></div><div class="m">Disponible ${un(k.tot)} · ${x.md=='v'?'Final':'Final'} ${k.f==null?'—':un(k.f)}${k.done&&!k.err?' · '+(k.fis?'Salieron ':'Vendidas ')+un(k.v-(k.va||0)-(k.vt||0)-(k.vf||0))+(k.vf?' · Fiadas '+un(k.vf):''):''}</div>${k.f!=null&&k.tot>0&&!k.err?`<div class="bar"><i style="width:${Math.min(100,k.f/k.tot*100)}%"></i></div>`:''}</div>`}).join(''):'<div class="empty"><div style="font-size:46px">📦</div>Aún no hay productos.</div>')+'<div id="nores" class="empty" style="display:none">No hay productos con ese nombre.</div>'+(p.end?'':'<button class="fab" aria-label="Agregar producto" onclick="np()"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button>')}
@@ -854,16 +864,16 @@ try{const l=await np('Filesystem','readdir',{path:'Inventario/Auto guardado',dir
 for(const f of L.slice(0,Math.max(0,L.length-30)))await np('Filesystem','deleteFile',{path:'Inventario/Auto guardado/'+f,directory:'DOCUMENTS'})}catch(e){}
 }catch(e){}}
 acs();
-r();setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
+r();window.__invOk=1;setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script>(function(){
-var APP_V=98,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=100,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
 window.APP_V_=APP_V;var err=false;window.addEventListener('error',function(){err=true});
 /* Si la app arrancó sin errores, la versión descargada queda confirmada */
-setTimeout(function(){if(!err)d('try')},2500);
+function okd(){if(!err&&window.__invOk)d('try')}setTimeout(okd,2500);document.addEventListener('visibilitychange',function(){if(document.hidden)okd()});
 /* Aviso de que se actualizó */
 try{var seen=+g('seen')||0;if(seen&&APP_V>seen&&typeof toast==='function')setTimeout(function(){toast('Actualizado a v'+APP_V)},1200);s('seen',String(APP_V))}catch(e){}
 var busy=false;
