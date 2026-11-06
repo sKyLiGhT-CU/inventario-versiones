@@ -360,8 +360,25 @@ function qrFile(ev){
   img.onerror=()=>toast('No se pudo abrir la foto.');
   img.src=URL.createObjectURL(f);
 }
+/* ===== v105: si el servidor no cambió desde la última vez, no se baja nada; y si tú no cambiaste nada, tampoco se sube ===== */
+const hsum=t=>{let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)+'.'+t.length};
+const canon=o=>{if(o===null||typeof o!='object')return JSON.stringify(o);if(Array.isArray(o)){let L=o.map(canon);if(o.every(x=>x&&typeof x=='object'&&!Array.isArray(x)&&x.id!=null)){L=o.map(x=>[String(x.id),canon(x)]).sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0).map(x=>x[1])}else if(o.every(x=>typeof x=='string'))L=L.slice().sort();return '['+L.join(',')+']'}return '{'+Object.keys(o).sort().map(k=>JSON.stringify(k)+':'+canon(o[k])).join(',')+'}'};
+const svk=()=>{try{const o=JSON.parse(localStorage.getItem('inv2v')||'{}');return o&&typeof o=='object'?o:{}}catch(e){return{}}};
+const svset=(c,o)=>{try{const m=svk();m[c]=o;localStorage.setItem('inv2v',JSON.stringify(m))}catch(e){}};
 async function syncEst(e){
   stamp(e,false);
+  try{
+    const k=svk()[e.code];
+    if(k&&k.v>0){
+      const m0=clean(e);delete m0.rol;const h0=hsum(JSON.stringify(m0));
+      const sv0=Number(await rpc('get_ver2',{p_code:e.code,p_id:DID()}));
+      if(sv0===k.v){
+        if(h0===k.h){setLS(e.code);return true}
+        const nv0=Number(await rpc('put_est2',{p_code:e.code,p_data:m0,p_ver:sv0,p_id:DID()}));
+        if(nv0>0){svset(e.code,{v:nv0,h:h0});setLS(e.code);return true}
+      }
+    }
+  }catch(x){}
   for(let a=0;a<5;a++){
     const rows=await rpc('get_est2',{p_code:e.code,p_id:DID(),p_nombre:(wk(e)?wname(e):null)});
     if(rows&&!Array.isArray(rows)&&rows.estado)throw new Error(rows.estado=='pendiente'?'El dueño debe aprobar este teléfono':'El dueño no permitió este teléfono');
@@ -369,13 +386,16 @@ async function syncEst(e){
     if(row&&row.data&&row.data.id!=e.id){e.code=genCode();persist();continue}
     const mine=clean(e);delete mine.rol;
     const merged=clean(row&&row.data?mergeEst(mine,norm(row.data)):mine);delete merged.rol;if(row&&row.data)late(merged,mine,row.data);
-    const nv=await rpc('put_est2',{p_code:e.code,p_data:merged,p_ver:ver,p_id:DID()});
+    const igual=!!(row&&row.data)&&canon(merged)===canon(row.data);
+    const nv=igual?ver:await rpc('put_est2',{p_code:e.code,p_data:merged,p_ver:ver,p_id:DID()});
     if(Number(nv)<0)continue;
     const idx=D.est.findIndex(z=>z.id==e.id);if(idx<0)return false;
     const cur=D.est[idx],before=JSON.stringify(cur);
-    const nw=mergeEst(cur,norm(clean(merged)));nw.rol=cur.rol;nw.code=cur.code;scrubCostos(nw);
+    const cc=clean(cur);delete cc.rol;const sinCambios=hsum(JSON.stringify(cc))===hsum(JSON.stringify(mine));
+    const nw=mergeEst(cur,norm(clean(merged)));nw.rol=cur.rol;nw.code=cur.code;scrubCostos(nw);stamp(nw,false);
     D.est[idx]=nw;
     if(JSON.stringify(nw)!==before){persist();if(!busy())r()}
+    try{if(sinCambios){const c2=clean(nw);delete c2.rol;svset(e.code,{v:Number(nv),h:hsum(JSON.stringify(c2))})}else svset(e.code,{v:Number(nv),h:''})}catch(x){}
     setLS(e.code);return true;
   }
   throw new Error('Varios teléfonos sincronizaron a la vez. Inténtalo de nuevo.');
@@ -888,7 +908,7 @@ acs();
 r();window.__invOk=1;setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script type="text/plain" data-boot>(function(){
-var APP_V=104,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=105,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
