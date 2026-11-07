@@ -915,7 +915,7 @@ acs();
 r();window.__invOk=1;setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script type="text/plain" data-boot>(function(){
-var APP_V=107,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=108,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -1040,90 +1040,183 @@ document.addEventListener('click',function(ev){
 window.invPanel=function(){VIEW='h';panel()};
 function ago(t){var x=(Date.now()-new Date(t).getTime())/1000;if(!(x>=0))return'—';if(x<90)return'ahora';if(x<3600)return Math.round(x/60)+' min';if(x<86400)return Math.round(x/3600)+' h';return Math.round(x/86400)+' d'}
 async function call(fn,a){var k=ld('inv_pk','');a.p_clave=k;return rpc(fn,a)}
+async function pnLoad(k){var r=await rpc('panel_dispositivos',{p_clave:k});try{RS=await rpc('panel_resumen',{p_clave:k})}catch(e){RS=null}try{var p=await rpc('panel_pagos',{p_clave:k,p_lim:100});PG=(p&&p.lista)||[]}catch(e){PG=[]}PT=Date.now();return r}
 async function panel(){
  var k=ld('inv_pk','');
  for(;;){
   if(!k){k=await dlg({msg:'Clave del panel',input:true,ok:'Entrar',cancel:'Cancelar'});if(!k)return;k=String(k).trim();if(!k)return}
-  try{var r=await rpc('panel_dispositivos',{p_clave:k});s('inv_pk',JSON.stringify(k));return pnShow(r)}
+  try{var r=await pnLoad(k);s('inv_pk',JSON.stringify(k));return pnShow(r)}
   catch(e){try{localStorage.removeItem('inv_pk')}catch(x){}var m=String(e&&e.message||'');
    if(/clave/i.test(m)){await say('Clave incorrecta');k='';continue}
    if(/404/.test(m)){await say('Falta ejecutar el SQL nuevo en la base de datos.');return}
    await say('No se pudo abrir el panel. ¿Hay internet?');return}
  }
 }
-var PQ='',PM=20,VIEW='h';
+/* ===== v108: panel profesional ===== */
+var PQ='',PM=20,VIEW='h',PS='r',RS=null,PG=[],PT=0;
 function fid(id){return String(id).match(/.{1,5}/g).join('-')}
-function chip(k,t){return'<button class="s" style="display:inline-block;width:auto;padding:6px 12px;margin:2px 4px 2px 0;'+(PF==k?'border-color:#fff':'')+'" onclick="pnFil(\''+k+'\')">'+t+'</button>'}
-function fl(d,k){var n=Date.now(),D1=864e5,a=(n-new Date(d.ultima))/D1,act=d.codigo&&d.activado,v=act?new Date(d.vence).getTime():0;
- switch(k){case'a':return a<=7;case'i':return a>14;case'v':return d.version<AV;case's':return !d.codigo;case'v7':return act&&v>n&&v-n<=7*D1;case'gr':return act&&v<=n&&v+3*D1>n;case've':return act&&v+3*D1<=n;case'ia':return act&&v>n&&a>14;default:return true}}
-var TT={t:'Todos',a:'Activos 7d',i:'Sin abrir 14d',v:'Versión vieja',s:'Sin código',v7:'Códigos por vencer (7 días)',gr:'En días de gracia',ve:'Código vencido',ia:'Con código y sin abrir 14 días'};
-function back(){return'<button class="s" onclick="pnGo(\'h\')" style="display:inline-block;width:auto;padding:6px 12px;margin-bottom:6px">← Volver</button>'}
-function pnShow(r){LAST=r;({h:vHome,l:vList,c:vCodes,s:vSet}[VIEW]||vHome)(r)}
-window.pnGo=function(v,f){VIEW=v;if(f)PF=f;if(v=='l'&&!f){PF='t'}PQ='';PM=20;if(LAST)pnShow(LAST)};
+function pnCss(){if(document.getElementById('pncss'))return;var st=document.createElement('style');st.id='pncss';st.textContent=
+'.pn-top{display:flex;align-items:center;gap:8px;margin-bottom:2px}.pn-top>div{flex:1;min-width:0}'
++'.pn-ic{width:36px!important;height:36px;flex:none;border-radius:50%;border:1px solid var(--b);background:var(--c);color:var(--t);font-size:16px;padding:0!important;margin:0!important}'
++'.pn-t{display:flex;gap:6px;overflow-x:auto;margin:10px 0 12px;padding-bottom:2px;scrollbar-width:none}.pn-t::-webkit-scrollbar{display:none}'
++'.pn-t button{width:auto!important;flex:none;padding:7px 13px!important;margin:0!important;border-radius:999px;border:1px solid var(--b);background:var(--c);color:var(--t);font-size:13px;font-weight:600}'
++'.pn-t button.on{background:var(--p);color:#fff;border-color:var(--p)}'
++'.pn-g{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}'
++'.pn-k{background:var(--c);border:1px solid var(--b);border-radius:14px;padding:12px;min-width:0}.pn-k small{display:block;color:var(--m);font-size:12px;margin-bottom:4px}'
++'.pn-k b{display:block;font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pn-k i{display:block;font-style:normal;font-size:12px;font-weight:700;margin-top:4px}'
++'.pn-c{background:var(--c);border:1px solid var(--b);border-radius:14px;padding:12px;margin:8px 0}'
++'.pn-h{font-size:13px;font-weight:800;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;gap:8px}.pn-h span{font-weight:600;color:var(--m);font-size:12px}'
++'.pn-b{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;margin:4px 4px 0 0;border:1px solid currentColor;white-space:nowrap}'
++'.pn-ok{color:var(--g)}.pn-w{color:var(--w)}.pn-no{color:var(--r)}.pn-mu{color:var(--m)}'
++'.pn-bar{height:10px;border-radius:999px;overflow:hidden;display:flex;background:var(--b)}.pn-bar span{display:block;height:100%}'
++'.pn-row{display:flex;align-items:center;gap:0;padding:10px;background:var(--c);border:1px solid var(--b);border-radius:14px;margin:6px 0}.pn-row .pn-m{flex:1;min-width:0}.pn-row .pn-m b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
++'.pn-al{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:6px 0;border-radius:12px;background:var(--c);border:1px solid var(--b);border-left:4px solid var(--w)}.pn-al.a-no{border-left-color:var(--r)}.pn-al.a-mu{border-left-color:var(--m)}.pn-al b{font-size:18px}'
++'.pn-lg{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px}.pn-lg span{font-size:12px;color:var(--m);white-space:nowrap}.pn-lg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}'
++'.pn-ch{display:flex;gap:6px;overflow-x:auto;margin:6px 0;scrollbar-width:none}.pn-ch::-webkit-scrollbar{display:none}.pn-ch button{width:auto!important;flex:none;padding:6px 12px!important;margin:0!important;border-radius:999px;border:1px solid var(--b);background:var(--c);color:var(--t);font-size:12px}.pn-ch button.on{border-color:var(--p);color:var(--p);font-weight:700}'
++'.pn-ev{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--b);font-size:13px}.pn-ev:last-child{border-bottom:0}.pn-ev small{color:var(--m);display:block;font-size:11px}'
++'.pn-sw{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;background:var(--c);border:1px solid var(--b);border-radius:14px;margin:8px 0}.pn-sw div{min-width:0}.pn-sw .m{margin-top:2px}'
++'.pn-sw button{width:auto!important;flex:none;margin:0!important;padding:7px 14px!important}'
++'.pn-kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--b);font-size:13px}.pn-kv:last-child{border-bottom:0}.pn-kv span{color:var(--m)}';
+document.head.appendChild(st)}
+function mny(n){return Number(n||0).toLocaleString('es',{maximumFractionDigits:2})+' '+((RS&&RS.moneda)||'CUP')}
+var MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+var LKS={vi:['Vigente','ok'],pv:['Por vencer','w'],gr:['En gracia','w'],ve:['Vencido','no'],sc:['Sin código','mu'],su:['Sin activar','mu'],ex:['Exento','mu']};
+function lst(d){var n=Date.now(),D1=864e5;if(d.exento)return'ex';if(!d.codigo)return'sc';if(!d.activado)return'su';var v=new Date(d.vence).getTime();if(v>n)return v-n<=7*D1?'pv':'vi';if(v+3*D1>n)return'gr';return've'}
+function lbadge(d){var k=lst(d),x=LKS[k],t=x[0],n=Date.now(),v=new Date(d.vence).getTime();if(k=='vi'||k=='pv')t+=' · '+Math.max(0,Math.ceil((v-n)/864e5))+' d';else if(k=='gr')t+=' · '+Math.max(0,Math.ceil((v+3*864e5-n)/864e5))+' d';return'<span class="pn-b pn-'+x[1]+'">'+t+'</span>'}
+function abadge(d){var a=(Date.now()-new Date(d.ultima))/864e5;return a<=1?'<span class="pn-b pn-ok">● Activo hoy</span>':a<=7?'<span class="pn-b pn-ok">Activo</span>':a>14?'<span class="pn-b pn-no">Inactivo</span>':'<span class="pn-b pn-w">Poco uso</span>'}
+function fl(d,k){var n=Date.now(),a=(n-new Date(d.ultima))/864e5,l=lst(d);switch(k){case'a':return a<=7;case'i':return a>14;case'v':return d.version<AV;case's':return !d.codigo;case'v7':return l=='pv';case'gr':return l=='gr';case've':return l=='ve';case'vi':return l=='vi'||l=='pv';case'ex':return !!d.exento;case'ia':return(l=='vi'||l=='pv')&&a>14;default:return true}}
+var TT={t:'Todos',a:'Activos 7d',i:'Sin abrir 14d',v:'Versión vieja',s:'Sin código',v7:'Por vencer (7 días)',gr:'En días de gracia',ve:'Vencidos',vi:'Con código vigente',ex:'Exentos',ia:'Con código y sin abrir 14 días'};
+function bars(L,o){o=o||{};var W=300,H=96,P=2,n=L.length||1,mx=1;L.forEach(function(x){if(+x.n>mx)mx=+x.n});var bw=(W-2*P)/n,h='';
+ L.forEach(function(x,i){var v=+x.n||0,bh=Math.round(v/mx*(H-32)),y=H-17-bh,last=i==n-1,cx=P+i*bw+bw/2;
+  h+='<rect x="'+(P+i*bw+2)+'" y="'+y+'" width="'+Math.max(2,bw-4)+'" height="'+Math.max(v>0?3:1,bh)+'" rx="3" fill="'+(o.c||'var(--p)')+'" opacity="'+(last||o.all?1:.45)+'"/>';
+  if(v>0&&n<=14)h+='<text x="'+cx+'" y="'+(y-3)+'" font-size="9" text-anchor="middle" fill="var(--m)">'+(o.v?o.v(v):v)+'</text>';
+  var t=o.lab?o.lab(x,i):'';if(t)h+='<text x="'+cx+'" y="'+(H-4)+'" font-size="9" text-anchor="middle" fill="var(--m)">'+t+'</text>'});
+ return'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block"><line x1="0" y1="'+(H-17)+'" x2="'+W+'" y2="'+(H-17)+'" stroke="var(--b)"/>'+h+'</svg>'}
+function kpi(l,v,sub,cls){return'<div class="pn-k"><small>'+l+'</small><b>'+v+'</b>'+(sub?'<i class="pn-'+(cls||'mu')+'">'+sub+'</i>':'')+'</div>'}
+function pc(a,b){return b?Math.round(a*100/b)+'%':'0%'}
+function dlt(a,b){a=+a||0;b=+b||0;if(!b)return a?['nuevo este mes','ok']:['sin pagos aún','mu'];var p=Math.round((a-b)*100/b);return[(p>=0?'▲ ':'▼ ')+Math.abs(p)+'% vs mes anterior',p>=0?'ok':'no']}
+function tabs(t){var T=[['h','Resumen'],['l','Dispositivos'],['c','Licencias'],['i','Ingresos'],['o','Locales'],['s','Ajustes']];return'<div class="pn-t">'+T.map(function(x){return'<button class="'+(t==x[0]?'on':'')+'" onclick="pnGo(\''+x[0]+'\')">'+x[1]+'</button>'}).join('')+'</div>'}
+function tabFix(){try{var b=document.querySelector('.pn-t button.on');if(b&&b.scrollIntoView)b.scrollIntoView({inline:'center',block:'nearest'})}catch(e){}}
+function head(t){setTimeout(tabFix,40);return'<div class="pn-top"><div><div style="font-size:19px;font-weight:800">Panel de control</div><div class="m">'+(PT?'Actualizado hace '+ago(PT):'')+'</div></div><button class="pn-ic" aria-label="Actualizar" onclick="pnRef()">⟳</button><button class="pn-ic" aria-label="Cerrar" onclick="cm()">✕</button></div>'+tabs(t)}
+function back(){return tabs(VIEW)}
+function pnShow(r){LAST=r;pnCss();({h:vHome,l:vList,c:vCodes,i:vIng,s:vSet}[VIEW]||vHome)(r)}
+window.pnGo=function(v,f){if(v=='o'){VIEW='o';pnAud();return}VIEW=v;if(f)PF=f;if(v=='l'&&!f){PF='t'}PQ='';PM=20;if(LAST)pnShow(LAST)};
+window.pnRef=async function(){await reload();toast('Actualizado')};
 function vHome(r){
- var L=r.lista||[],st=function(a,b){return'<div style="flex:1;text-align:center"><b style="font-size:21px">'+a+'</b><div class="m">'+b+'</div></div>'};
- var al=[['v7','🔑','vencen en 7 días'],['gr','⏳','en días de gracia'],['ve','⛔','con código vencido'],['ia','😴','con código y sin abrir 14 días']].map(function(x){var n=L.filter(function(d){return fl(d,x[0])}).length;return n?'<div class="it" onclick="pnGo(\'l\',\''+x[0]+'\')"><b>'+x[1]+' '+n+'</b> '+x[2]+' ›</div>':''}).join('');
+ var L=r.lista||[],tot=r.total||0,C={vi:0,pv:0,gr:0,ve:0,sc:0,ex:0};L.forEach(function(d){var k=lst(d);if(k=='su')k='sc';C[k]++});
+ var ing=RS?dlt(RS.ingresos_mes,RS.ingresos_prev):null;
+ var k4='<div class="pn-g">'+kpi('Dispositivos',tot,'+'+(r.nuevos_semana||0)+' esta semana','ok')+kpi('Activos hoy',r.hoy||0,pc(r.hoy,tot)+' del total','mu')+kpi('Activos 7 días',r.semana||0,pc(r.semana,tot)+' del total','mu')
+  +(RS?kpi('Ingresos del mes',mny(RS.ingresos_mes),ing[0],ing[1]):kpi('Con código vigente',C.vi+C.pv,'','mu'))+'</div>';
+ var act='',nue='';
+ if(RS&&RS.activos14){var A=RS.activos14,sum=0;A.forEach(function(x){sum+=+x.n||0});
+  act='<div class="pn-c"><div class="pn-h">Actividad diaria<span>últimos 14 días</span></div>'+bars(A,{lab:function(x){return x.d.slice(8)}})+'<div class="m" style="margin-top:6px">Promedio: '+(Math.round(sum/A.length*10)/10)+' dispositivos al día · hoy '+(A[A.length-1]?A[A.length-1].n:0)+'</div></div>';
+  nue='<div class="pn-c"><div class="pn-h">Dispositivos nuevos<span>últimos 14 días</span></div>'+bars(RS.nuevos14||[],{c:'var(--g)',lab:function(x){return x.d.slice(8)}})+'</div>'}
+ var LK=[['vi','Vigentes','var(--g)'],['pv','Por vencer','var(--w)'],['gr','En gracia','#f97316'],['ve','Vencidos','var(--r)'],['sc','Sin código','var(--m)'],['ex','Exentos','#8b5cf6']];
+ var lic='<div class="pn-c"><div class="pn-h">Licencias<span>'+tot+' dispositivos</span></div><div class="pn-bar">'+LK.map(function(x){return C[x[0]]?'<span style="width:'+(C[x[0]]*100/(tot||1))+'%;background:'+x[2]+'"></span>':''}).join('')+'</div><div class="pn-lg">'+LK.map(function(x){return'<span onclick="pnGo(\'l\',\''+(x[0]=='sc'?'s':x[0])+'\')"><i style="background:'+x[2]+'"></i>'+x[1]+' '+C[x[0]]+'</span>'}).join('')+'</div></div>';
+ var AL=[['v7','⏳','vencen en 7 días','w'],['gr','⚠️','en días de gracia','w'],['ve','⛔','con código vencido','no'],['ia','💤','con código y sin abrir 14 días','w'],['v','⬆️','con versión vieja','mu']].map(function(x){var n=L.filter(function(d){return fl(d,x[0])}).length;return n?'<div class="pn-al a-'+x[3]+'" onclick="pnGo(\'l\',\''+x[0]+'\')"><b>'+n+'</b><span style="flex:1">'+x[1]+' '+x[2]+'</span><span class="m">›</span></div>':''}).join('');
+ if(RS&&RS.locales&&RS.locales.grandes>0)AL+='<div class="pn-al a-no" onclick="pnGo(\'o\')"><b>'+RS.locales.grandes+'</b><span style="flex:1">📦 locales cerca del límite de tamaño</span><span class="m">›</span></div>';
+ var att='<div class="pn-h" style="margin-top:14px">Requiere atención</div>'+(AL||'<div class="pn-c m" style="text-align:center">Todo en orden ✓</div>');
+ var vs=r.versiones||[],mx=1;vs.forEach(function(x){if(+x.n>mx)mx=+x.n});
+ var ver='<div class="pn-c"><div class="pn-h">Versiones instaladas<span>la tuya: v'+AV+'</span></div>'+(vs.map(function(x){return'<div style="display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px"><span style="width:42px">v'+E(x.v)+'</span><div class="pn-bar" style="flex:1"><span style="width:'+(x.n*100/mx)+'%;background:'+(+x.v>=AV?'var(--g)':'var(--w)')+'"></span></div><b style="width:24px;text-align:right">'+x.n+'</b></div>'}).join('')||'<div class="m">—</div>')+'</div>';
+ var loc='';if(RS&&RS.locales){var lc=RS.locales,pp=Math.min(100,lc.max*100/5e6);loc='<div class="pn-c"><div class="pn-h">Locales sincronizados<span>'+lc.total+'</span></div><div class="pn-bar"><span style="width:'+Math.max(pp,1)+'%;background:'+(pp>80?'var(--r)':pp>50?'var(--w)':'var(--g)')+'"></span></div><div class="m" style="margin-top:6px">El más grande ocupa '+Math.round(lc.max/1024)+' KB de 5 120 KB ('+Math.round(pp)+'%).</div></div>'}
+ var ev='';if(RS&&(RS.eventos||[]).length){ev='<div class="pn-c"><div class="pn-h">Actividad reciente</div>'+RS.eventos.slice(0,8).map(function(x){var ic=x.t=='nuevo'?'🆕':x.t=='codigo'?'🔑':'💵',tx=x.t=='nuevo'?'Nuevo dispositivo: <b>'+E(x.x)+'</b>':x.t=='codigo'?'Código activado: <b>'+E(x.x)+'</b>':(function(){var p=String(x.x).split('|');return'Pago'+(p[0]?' de <b>'+E(p[0])+'</b>':'')+' · '+mny(p[1])})();return'<div class="pn-ev"><span>'+ic+'</span><div>'+tx+'<small>hace '+ago(x.ts)+'</small></div></div>'}).join('')+'</div>'}
  var nu=(r.codigos||[]).length;
- show('<h3>📡 Panel de uso</h3><div class="row" style="margin:6px 0 10px">'+st(r.total,'dispositivos')+st(r.hoy,'hoy')+st(r.semana,'semana')+st(r.nuevos_semana,'nuevos')+'</div>'
-  +'<div class="m">Versiones: '+E((r.versiones||[]).map(function(x){return'v'+x.v+': '+x.n}).join(' · ')||'—')+'</div>'
-  +(al?'<div class="m" style="margin:12px 0 2px"><b>Requiere atención</b></div>'+al:'<div class="m" style="margin:12px 0">Nada requiere atención ✅</div>')
-  +'<button class="s" onclick="pnGo(\'l\',\'t\')" style="margin-top:12px">👥 Dispositivos ('+r.total+')</button>'
-  +'<button class="s" onclick="pnAud()" style="margin-top:8px">🔎 Auditar locales</button>'
-  +'<button class="s" onclick="pnGo(\'c\')" style="margin-top:8px">🔑 Códigos'+(nu?' ('+nu+' sin usar)':'')+'</button>'
-  +'<button class="s" onclick="pnGo(\'s\')" style="margin-top:8px">⚙️ Ajustes</button>'
-  +'<button class="b" onclick="pnNuevo()" style="margin-top:8px">Generar código</button><button class="s" onclick="cm()" style="margin-top:8px">Cerrar</button>');
+ show(head('h')+k4+act+nue+lic+att+ver+loc+ev+'<button class="b" onclick="pnNuevo()" style="margin-top:10px">＋ Generar código</button>'+(nu?'<div class="m" style="text-align:center;margin-top:6px">'+nu+' código'+(nu>1?'s':'')+' sin usar</div>':''));
 }
+function chips(O,cur,fn){return'<div class="pn-ch">'+O.map(function(x){return'<button class="'+(cur==x[0]?'on':'')+'" onclick="'+fn+'(\''+x[0]+'\')">'+x[1]+'</button>'}).join('')+'</div>'}
+function sorted(L){var a=L.slice(),nm=function(d){return String(d.nombre||'~'+d.id).toLowerCase()},vv=function(d){return lst(d)=='sc'||lst(d)=='ex'||lst(d)=='su'?9e15:new Date(d.vence).getTime()};
+ if(PS=='u')a.sort(function(x,y){return(y.uso7||0)-(x.uso7||0)});else if(PS=='v')a.sort(function(x,y){return vv(x)-vv(y)});else if(PS=='n')a.sort(function(x,y){return nm(x)<nm(y)?-1:1});return a}
 function vList(r){
  var me=did(),q=PQ.toLowerCase().replace(/-/g,'');
- var L=(r.lista||[]).filter(function(d){return fl(d,PF)&&(!q||((d.nombre||'')+' '+d.id).toLowerCase().indexOf(q)>=0)});
- var rows=L.slice(0,PM).map(function(d){var c=d.codigo?'🔑 '+cstat({activado:d.activado,vence:d.vence}):'sin código';return'<div class="it" onclick="pnDev(\''+E(d.id)+'\')"><b>'+E(d.nombre||String(d.id).slice(0,5))+'</b>'+(d.id==me?' · este teléfono':'')+(d.exento?' · 🛡️ exento':'')+'<div class="m">v'+E(d.version)+' · hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros/7d · '+E(d.locales)+' locales · '+E(d.productos)+' productos</div><div class="m">'+c+'</div></div>'}).join('');
- show(back()+'<h3>'+E(TT[PF]||'Dispositivos')+'</h3>'
-  +'<input placeholder="Buscar nombre o código de app" value="'+E(PQ)+'" onchange="pnQ(this.value)" style="margin:6px 0">'
-  +'<div>'+chip('t','Todos')+chip('a','Activos 7d')+chip('i','Sin abrir 14d')+chip('v','Versión vieja')+chip('s','Sin código')+'</div>'
-  +'<div class="m" style="margin:8px 0 0">'+L.length+' dispositivo'+(L.length==1?'':'s')+'</div>'+(rows||'<div class="m">Nada con ese filtro.</div>')
-  +(L.length>PM?'<button class="s" onclick="pnMore()" style="margin-top:8px">Ver más ('+(L.length-PM)+')</button>':''));
+ var L=sorted((r.lista||[]).filter(function(d){return fl(d,PF)&&(!q||((d.nombre||'')+' '+d.id+' '+(d.nota||'')+' '+(d.codigo||'')).toLowerCase().replace(/-/g,'').indexOf(q)>=0)}));
+ var rows=L.slice(0,PM).map(function(d){return'<div class="pn-row" onclick="pnDev(\''+E(d.id)+'\')">'+av(d.nombre||String(d.id).slice(0,5))+'<div class="pn-m"><b>'+E(d.nombre||String(d.id).slice(0,5))+'</b><div class="m">v'+E(d.version)+' · hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas'+(d.uso7?' · '+d.uso7+' reg/7d':'')+'</div><div>'+abadge(d)+lbadge(d)+(d.id==me?'<span class="pn-b pn-mu">este teléfono</span>':'')+'</div>'+(d.nota?'<div class="m" style="margin-top:3px">📝 '+E(String(d.nota).slice(0,70))+'</div>':'')+'</div></div>'}).join('');
+ show(head('l')+'<input placeholder="Buscar nombre, código o nota" value="'+E(PQ)+'" onchange="pnQ(this.value)" style="margin:0 0 6px">'
+  +chips([['t','Todos'],['a','Activos 7d'],['i','Sin abrir 14d'],['v','Versión vieja'],['s','Sin código'],['v7','Por vencer'],['ve','Vencidos'],['ex','Exentos']],PF,'pnFil')
+  +chips([['r','Recientes'],['u','Más uso'],['v','Vencen primero'],['n','Nombre']],PS,'pnSort')
+  +'<div class="m" style="margin:6px 0 0">'+E(TT[PF]||'Dispositivos')+' · '+L.length+' dispositivo'+(L.length==1?'':'s')+'</div>'+(rows||'<div class="pn-c m" style="text-align:center">Nada con ese filtro.</div>')
+  +(L.length>PM?'<button class="s" onclick="pnMore()" style="margin-top:8px">Ver más ('+(L.length-PM)+')</button>':'')+'<button class="s" onclick="pnCsv()" style="margin-top:10px">Copiar lista (CSV)</button>');
 }
+function life(d){var t=Math.max(1,(d.dias||1)*864e5),left=new Date(d.vence).getTime()-Date.now(),p=Math.max(0,Math.min(100,left*100/t)),days=Math.ceil(left/864e5);return'<div class="pn-bar" style="margin-top:6px"><span style="width:'+p+'%;background:'+(left<=0?'var(--r)':p<25?'var(--w)':'var(--g)')+'"></span></div><div class="m" style="margin-top:3px">'+(left>0?days+' día'+(days==1?'':'s')+' restante'+(days==1?'':'s')+' de '+d.dias:'Venció hace '+Math.max(0,-days)+' día'+(days==-1?'':'s'))+'</div>'}
 function vCodes(r){
- var U=(r.codigos||[]).map(function(c){return'<div class="it" onclick="pnCod(\''+E(c.codigo)+'\')"><b>'+E(c.codigo)+'</b> · '+E(c.cliente||'')+'<div class="m">'+c.dias+' días · sin usar</div></div>'}).join('');
- var A=(r.lista||[]).filter(function(d){return d.codigo}).sort(function(a,b){return new Date(a.vence||0)-new Date(b.vence||0)}).map(function(d){return'<div class="it" onclick="pnCodDev(\''+E(d.id)+'\')"><b>'+E(d.codigo)+'</b> · '+E(d.nombre||String(d.id).slice(0,5))+'<div class="m">'+d.dias+' días · '+cstat({activado:d.activado,vence:d.vence})+'</div></div>'}).join('');
- show(back()+'<h3>🔑 Códigos</h3><div class="m" style="margin:4px 0 2px"><b>Sin usar</b></div>'+(U||'<div class="m">Ninguno.</div>')+'<div class="m" style="margin:12px 0 2px"><b>En dispositivos</b></div>'+(A||'<div class="m">Ninguno.</div>')+'<button class="b" onclick="pnNuevo()" style="margin-top:12px">Generar código</button>');
+ var L=(r.lista||[]).filter(function(d){return d.codigo&&d.activado}).sort(function(a,b){return new Date(a.vence||0)-new Date(b.vence||0)}),C={pv:0,gr:0,ve:0,vi:0};L.forEach(function(d){var k=lst(d);if(C[k]!=null)C[k]++});
+ var U=(r.codigos||[]).map(function(c){return'<div class="pn-row" onclick="pnCod(\''+E(c.codigo)+'\')"><div class="pn-m"><b>'+E(c.codigo)+'</b><div class="m">'+E(c.cliente||'—')+' · '+c.dias+' días · sin usar</div></div><span class="m">›</span></div>'}).join('');
+ var A=L.map(function(d){return'<div class="pn-row" onclick="pnCodDev(\''+E(d.id)+'\')">'+av(d.nombre||String(d.id).slice(0,5))+'<div class="pn-m"><b>'+E(d.nombre||String(d.id).slice(0,5))+'</b><div class="m">'+E(d.codigo)+'</div><div>'+lbadge(d)+'</div>'+life(d)+'</div><button class="s" style="width:auto!important;margin:0 0 0 8px!important;padding:7px 11px!important" onclick="event.stopPropagation();pnExt(\''+E(d.codigo)+'\')">＋ Días</button></div>'}).join('');
+ show(head('c')+'<div class="pn-g">'+kpi('Vigentes',C.vi+C.pv,'','mu')+kpi('Por vencer (7 d)',C.pv,C.pv?'renueva pronto':'','w')+kpi('En gracia',C.gr,'','w')+kpi('Vencidos',C.ve,'','no')+'</div>'
+  +'<div class="pn-h" style="margin-top:12px">Sin usar<span>'+(r.codigos||[]).length+'</span></div>'+(U||'<div class="pn-c m" style="text-align:center">No hay códigos sin usar.</div>')
+  +'<div class="pn-h" style="margin-top:12px">En dispositivos<span>'+L.length+'</span></div>'+(A||'<div class="pn-c m" style="text-align:center">Ninguno.</div>')
+  +'<button class="b" onclick="pnNuevo()" style="margin-top:10px">＋ Generar código</button>');
+}
+function vIng(r){
+ if(!RS){show(head('i')+'<div class="pn-c m" style="text-align:center">Los ingresos no están disponibles. Falta actualizar la base de datos.</div>');return}
+ var d=dlt(RS.ingresos_mes,RS.ingresos_prev),I=RS.ingresos6||[],tot=(RS.ingresos_total||0);
+ var rows=PG.map(function(p){var f=new Date(p.creado);return'<div class="pn-row" onclick="pnPagoDet('+(+p.id)+')"><div class="pn-m"><b>'+E(p.cliente||p.nombre||'Sin nombre')+'</b><div class="m">'+f.toLocaleDateString('es',{day:'2-digit',month:'short'})+(p.codigo?' · '+E(p.codigo):'')+(p.nota?' · '+E(String(p.nota).slice(0,40)):'')+'</div></div><b style="color:var(--g);margin-left:8px;white-space:nowrap">'+Number(p.monto).toLocaleString('es',{maximumFractionDigits:2})+' '+E(p.moneda)+'</b></div>'}).join('');
+ show(head('i')+'<div class="pn-g">'+kpi('Este mes',mny(RS.ingresos_mes),d[0],d[1])+kpi('Mes anterior',mny(RS.ingresos_prev),'','mu')+kpi('Total acumulado',mny(tot),'','mu')+kpi('Pagos registrados',PG.length>=100?'100+':PG.length,'','mu')+'</div>'
+  +'<div class="pn-c"><div class="pn-h">Ingresos por mes<span>últimos 6 meses</span></div>'+bars(I,{c:'var(--g)',v:function(v){return v>=1000?Math.round(v/100)/10+'k':v},lab:function(x){return MES[(+String(x.m).slice(5,7))-1]||''}})+'</div>'
+  +'<button class="b" onclick="pnPago()" style="margin:6px 0">＋ Registrar pago</button>'
+  +'<div class="pn-h" style="margin-top:12px">Últimos pagos<span>toca uno para ver o eliminar</span></div>'+(rows||'<div class="pn-c m" style="text-align:center">Aún no has registrado pagos.</div>'));
 }
 function vSet(r){
- show(back()+'<h3>⚙️ Ajustes</h3><button class="s" onclick="pnLim()" style="margin-top:8px">Límites de prueba: '+(r.limites=='on'?'ENCENDIDOS':'apagados')+'</button><div class="m" style="margin:4px 0 12px">Encendidos: quien no tenga código vigente queda en modo prueba.</div>'
-  +'<button class="s" onclick="pnAsc()">Probar como cliente: '+(g('inv_asc')?'ACTIVADO':'desactivado')+'</button><div class="m" style="margin:4px 0">Ves tu app como la ve un cliente sin código, para comprobar los bloqueos.</div>');
+ var on=r.limites=='on';
+ show(head('s')+'<div class="pn-sw"><div><b>Límites de prueba</b><div class="m">Encendidos: quien no tenga código vigente queda en modo prueba.</div></div><button class="'+(on?'b':'s')+'" onclick="pnLim()">'+(on?'Encendidos':'Apagados')+'</button></div>'
+  +'<div class="pn-sw"><div><b>Probar como cliente</b><div class="m">Ves tu app como la ve un cliente sin código, para comprobar los bloqueos.</div></div><button class="'+(g('inv_asc')?'b':'s')+'" onclick="pnAsc()">'+(g('inv_asc')?'Activado':'Apagado')+'</button></div>'
+  +'<div class="pn-sw"><div><b>Moneda de los cobros</b><div class="m">Se usa en Ingresos y pagos.</div></div><button class="s" onclick="pnMon()">'+E((RS&&RS.moneda)||'CUP')+' ✎</button></div>'
+  +'<div class="pn-c"><div class="pn-h">Información</div><div class="pn-kv"><span>Versión de tu app</span><b>v'+AV+'</b></div><div class="pn-kv"><span>Dispositivos</span><b>'+(r.total||0)+'</b></div><div class="pn-kv"><span>Locales sincronizados</span><b>'+(RS&&RS.locales?RS.locales.total:'—')+'</b></div></div>'
+  +'<button class="s" onclick="pnCsv()" style="margin-top:6px">Copiar lista de dispositivos (CSV)</button><button class="s" onclick="pnSalir()" style="margin-top:8px">Cerrar sesión del panel</button>');
 }
 window.pnQ=function(v){PQ=String(v||'').trim();PM=20;if(LAST)pnShow(LAST)};
 window.pnMore=function(){PM+=20;if(LAST)pnShow(LAST)};
-window.pnDev=function(id){var d=(LAST.lista||[]).filter(function(x){return x.id==id})[0];if(!d)return;CP.i=id;
- var has=!!d.codigo;
- show('<h3>'+E(d.nombre||String(id).slice(0,5))+'</h3><div class="m">Código de app (toca para copiar)</div><div onclick="cpyK(\'i\')" style="font-size:18px;font-weight:700;text-align:center;padding:10px;margin:6px 0;border:1px dashed var(--b,#888);border-radius:12px;word-break:break-all">'+E(fid(id))+'</div>'
-  +'<div class="m">v'+E(d.version)+' · hace '+ago(d.ultima)+' · '+E(d.aperturas)+' aperturas · '+E(d.uso7||0)+' registros/7d</div><div class="m" style="margin:4px 0 10px">'+(has?'🔑 '+cstat({activado:d.activado,vence:d.vence}):'Sin código')+'</div>'
-  +'<button class="s" onclick="pnEx(\''+E(id)+'\','+(d.exento?'false':'true')+')">🛡️ '+(d.exento?'Quitar exención (cliente normal)':'Marcar como mío (exento de límites)')+'</button><button class="s" onclick="pnNom(\''+E(id)+'\')" style="margin-top:8px">✏️ Renombrar</button>'
-  +(has?'<button class="b" onclick="pnCodDev(\''+E(id)+'\')" style="margin-top:8px">🔑 Ver o copiar su código</button>':'<button class="b" onclick="pnGen(\''+E(id)+'\')" style="margin-top:8px">🔑 Generar código para este dispositivo</button>')
-  +'<button class="s" onclick="pnBack()" style="margin-top:8px">Volver al panel</button>')};
+window.pnFil=function(k){PF=k;PM=20;if(LAST)pnShow(LAST)};
+window.pnSort=function(k){PS=k;if(LAST)pnShow(LAST)};
+window.pnSalir=function(){try{localStorage.removeItem('inv_pk')}catch(e){}cm();toast('Sesión del panel cerrada')};
+window.pnDev=function(id){var d=(LAST.lista||[]).filter(function(x){return x.id==id})[0];if(!d)return;CP.i=id;CP.id=id;
+ var has=!!d.codigo,pg=(PG||[]).filter(function(p){return p.dispositivo==id}).slice(0,5),nm=d.nombre||String(id).slice(0,5);
+ var lic=has?(d.activado?'<div class="pn-kv"><span>Código</span><b>'+E(d.codigo)+'</b></div><div class="pn-kv"><span>Estado</span><div>'+lbadge(d)+'</div></div><div class="pn-kv"><span>Vence</span><b>'+fdt(new Date(d.vence).getTime())+'</b></div>'+life(d)+'<button class="b" onclick="pnExt(\''+E(d.codigo)+'\')" style="margin-top:10px">＋ Extender días</button><button class="s" onclick="pnCodDev(\''+E(id)+'\')" style="margin-top:8px">Ver o copiar su código</button>':'<div class="pn-kv"><span>Código</span><b>'+E(d.codigo)+'</b></div><div class="m" style="margin-top:6px">Todavía no lo ha activado.</div><button class="s" onclick="pnCodDev(\''+E(id)+'\')" style="margin-top:8px">Ver o copiar su código</button>'):'<div class="m">Sin código.</div><button class="b" onclick="pnGen(\''+E(id)+'\')" style="margin-top:8px">＋ Generar código para este dispositivo</button>';
+ show(head('l')+'<div style="display:flex;align-items:center;margin:2px 0 10px">'+av(nm)+'<div style="min-width:0"><div style="font-size:18px;font-weight:800;overflow:hidden;text-overflow:ellipsis">'+E(nm)+'</div><div>'+abadge(d)+lbadge(d)+'</div></div></div>'
+  +'<div class="pn-g">'+kpi('Aperturas',E(d.aperturas),'','mu')+kpi('Registros 7 días',E(d.uso7||0),'','mu')+kpi('Locales',E(d.locales||0),'','mu')+kpi('Productos',E(d.productos||0),'','mu')+'</div>'
+  +'<div class="pn-c"><div class="pn-h">Dispositivo</div><div class="pn-kv"><span>Primera vez</span><b>'+(d.primera?fdt(new Date(d.primera).getTime()):'—')+'</b></div><div class="pn-kv"><span>Última vez</span><b>hace '+ago(d.ultima)+'</b></div><div class="pn-kv"><span>Versión</span><b>v'+E(d.version)+(d.version<AV?' <span class="pn-b pn-w">vieja</span>':'')+'</b></div><div class="m" style="margin-top:8px">Código de app (toca para copiar)</div><div onclick="cpyK(\'i\')" style="font-size:16px;font-weight:700;text-align:center;padding:10px;margin:6px 0 0;border:1px dashed var(--b,#888);border-radius:12px;word-break:break-all">'+E(fid(id))+'</div></div>'
+  +'<div class="pn-c"><div class="pn-h">Licencia</div>'+lic+'</div>'
+  +'<div class="pn-c"><div class="pn-h">Nota<button class="s" style="width:auto!important;margin:0!important;padding:4px 10px!important;font-size:12px" onclick="pnNota(\''+E(id)+'\')">✎ Editar</button></div><div class="m">'+(d.nota?E(d.nota):'Sin nota. Útil para anotar el teléfono del cliente o a qué negocio pertenece.')+'</div></div>'
+  +'<div class="pn-c"><div class="pn-h">Pagos<button class="s" style="width:auto!important;margin:0!important;padding:4px 10px!important;font-size:12px" onclick="pnPago(\''+E(id)+'\')">＋ Pago</button></div>'+(pg.length?pg.map(function(p){return'<div class="pn-kv"><span>'+new Date(p.creado).toLocaleDateString('es',{day:'2-digit',month:'short'})+(p.nota?' · '+E(String(p.nota).slice(0,24)):'')+'</span><b>'+Number(p.monto).toLocaleString('es',{maximumFractionDigits:2})+' '+E(p.moneda)+'</b></div>'}).join(''):'<div class="m">Sin pagos registrados.</div>')+'</div>'
+  +'<button class="s" onclick="pnNom(\''+E(id)+'\')">✎ Renombrar</button><button class="s" onclick="pnEx(\''+E(id)+'\','+(d.exento?'false':'true')+')" style="margin-top:8px">'+(d.exento?'Quitar exención (cliente normal)':'Marcar como mío (exento de límites)')+'</button>')};
 window.pnEx=async function(id,on){try{await call('panel_exento',{p_id:id,p_on:on})}catch(e){await say('No se pudo cambiar.')}reload()};
 window.pnCodDev=function(id){var d=(LAST.lista||[]).filter(function(x){return x.id==id})[0];if(d)cShow({codigo:d.codigo,cliente:d.nombre,dias:d.dias,activado:d.activado,vence:d.vence,anulado:false})};
-window.pnGen=async function(id){var d=await dlg({msg:'Días de validez (cuentan desde que se activa)',input:true,def:'30',ok:'Generar',cancel:'Cancelar'});d=parseInt(d,10);if(!(d>0))return;var x=(LAST.lista||[]).filter(function(y){return y.id==id})[0]||{};try{var code=await call('panel_crear_codigo',{p_cliente:id,p_dias:d});cShow({codigo:code,cliente:x.nombre,dias:d,activado:null,anulado:false})}catch(e){await say('No se pudo crear el código.');reload()}};
-async function reload(){try{pnShow(await rpc('panel_dispositivos',{p_clave:ld('inv_pk','')}))}catch(e){}}
+window.pnGen=async function(id){var d=await dlg({msg:'Días de validez (cuentan desde que se activa)',input:true,def:'30',ok:'Generar',cancel:'Cancelar'});d=parseInt(d,10);if(!(d>0))return;var x=(LAST.lista||[]).filter(function(y){return y.id==id})[0]||{};try{var code=await call('panel_crear_codigo',{p_cliente:id,p_dias:d});cShow({codigo:code,cliente:x.nombre,dias:d,activado:null,anulado:false,dispositivo:id})}catch(e){await say('No se pudo crear el código.');reload()}};
+async function reload(){try{pnShow(await pnLoad(ld('inv_pk','')))}catch(e){}}
 window.pnLim=async function(){var on=!(LAST&&LAST.limites=='on');if(!(await ask(on?'¿Encender los límites? Quien no tenga un código válido quedará en modo prueba (1 establecimiento y 5 productos). Se aplica cuando cada teléfono se conecte.':'¿Apagar los límites? Todos vuelven a usar la app sin restricciones.',{ok:on?'Encender':'Apagar',danger:on})))return;try{await call('panel_limites',{p_on:on})}catch(e){await say('No se pudo cambiar.')}reload()};
-window.pnFil=function(k){PF=k;if(LAST)pnShow(LAST)};
 window.pnNom=async function(id){var d=(LAST.lista||[]).filter(function(x){return x.id==id})[0]||{};var n=await dlg({msg:'Nombre para este dispositivo',input:true,def:d.nombre||'',ok:'Guardar',cancel:'Cancelar'});if(n===null||n===false||n===undefined)return;try{await call('panel_nombre',{p_id:id,p_nombre:String(n).trim()})}catch(e){await say('No se pudo guardar.')}reload()};
+window.pnNota=async function(id){var d=(LAST.lista||[]).filter(function(x){return x.id==id})[0]||{};var n=await dlg({msg:'Nota sobre este cliente (teléfono, negocio…)',input:true,def:d.nota||'',ok:'Guardar',cancel:'Cancelar'});if(n===null||n===false||n===undefined)return;try{await call('panel_nota',{p_id:id,p_nota:String(n).trim()})}catch(e){await say('No se pudo guardar la nota. ¿Falta actualizar la base de datos?')}await reload();pnDev(id)};
+window.pnExt=async function(code){var x=(LAST.lista||[]).filter(function(y){return y.codigo==code})[0]||{};var d=await dlg({msg:'Días a sumar al código '+code+'.\nSi ya venció, cuentan desde hoy.',input:true,def:'30',ok:'Extender',cancel:'Cancelar'});d=parseInt(d,10);if(!(d>0))return;
+ try{await call('panel_extender',{p_codigo:code,p_dias:d})}catch(e){await say('No se pudo extender el código.');return}
+ await reload();toast('Código extendido '+d+' días',4000);if(await ask('¿Registrar el pago de esta renovación?',{ok:'Registrar'}))pnPago(x.id||null,x.nombre||'',code)};
+window.pnPago=async function(disp,cli,cod){var x=disp?((LAST&&LAST.lista||[]).filter(function(y){return y.id==disp})[0]||{}):{};cli=cli||x.nombre||'';
+ if(!cli&&!disp){var c=await dlg({msg:'¿De quién es el pago? (nombre del cliente)',input:true,ok:'Siguiente',cancel:'Cancelar'});if(c===null||c===false||c===undefined)return;cli=String(c).trim()}
+ var m=await dlg({msg:'Monto cobrado'+(cli?' a '+cli:'')+' ('+((RS&&RS.moneda)||'CUP')+')',input:true,def:'',ok:'Siguiente',cancel:'Cancelar'});if(m===null||m===false||m===undefined)return;m=parseFloat(String(m).replace(',','.'));if(!(m>0)){await say('Escribe un monto válido.');return}
+ var n=await dlg({msg:'Nota (opcional)',input:true,def:'',ok:'Guardar',cancel:'Cancelar'});if(n===null||n===false||n===undefined)return;
+ try{await call('panel_pago_nuevo',{p_dispositivo:disp||null,p_cliente:cli||null,p_monto:m,p_codigo:cod||x.codigo||null,p_nota:String(n||'').trim()})}catch(e){await say('No se pudo registrar el pago. ¿Falta actualizar la base de datos?');return}
+ await reload();toast('Pago registrado',3000)};
+window.pnPagoDet=function(id){var p=(PG||[]).filter(function(z){return z.id==id})[0];if(!p)return;show(head('i')+'<div class="pn-c"><div class="pn-h">Pago</div><div class="pn-kv"><span>Cliente</span><b>'+E(p.cliente||p.nombre||'—')+'</b></div><div class="pn-kv"><span>Monto</span><b>'+Number(p.monto).toLocaleString('es',{maximumFractionDigits:2})+' '+E(p.moneda)+'</b></div><div class="pn-kv"><span>Fecha</span><b>'+new Date(p.creado).toLocaleString('es',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})+'</b></div>'+(p.codigo?'<div class="pn-kv"><span>Código</span><b>'+E(p.codigo)+'</b></div>':'')+(p.nota?'<div class="pn-kv"><span>Nota</span><b>'+E(p.nota)+'</b></div>':'')+'</div><button class="s" onclick="pnPagoDel('+(+p.id)+')" style="color:var(--r);border-color:var(--r)">Eliminar este pago</button><button class="s" onclick="pnGo(\'i\')" style="margin-top:8px">Volver</button>')};
+window.pnPagoDel=async function(id){if(!(await ask('¿Eliminar este pago del registro?',{ok:'Eliminar',danger:true})))return;try{await call('panel_pago_borrar',{p_id:id})}catch(e){await say('No se pudo eliminar.');return}VIEW='i';await reload()};
+window.pnMon=async function(){var m=await dlg({msg:'Moneda de los cobros (por ejemplo CUP, MLC, USD)',input:true,def:(RS&&RS.moneda)||'CUP',ok:'Guardar',cancel:'Cancelar'});if(m===null||m===false||m===undefined)return;try{await call('panel_moneda',{p_moneda:String(m).trim()})}catch(e){await say('No se pudo cambiar la moneda.');return}reload()};
+window.pnCsv=function(){var q=function(v){v=v==null?'':String(v);return/[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v},L=(LAST&&LAST.lista)||[],H=['nombre','codigo_app','version','primera','ultima','aperturas','registros_7d','locales','productos','codigo','estado','vence','nota'];
+ var rows=L.map(function(d){return[d.nombre,fid(d.id),d.version,d.primera?new Date(d.primera).toISOString().slice(0,10):'',d.ultima?new Date(d.ultima).toISOString().slice(0,10):'',d.aperturas,d.uso7,d.locales,d.productos,d.codigo,LKS[lst(d)][0],d.vence?new Date(d.vence).toISOString().slice(0,10):'',d.nota].map(q).join(',')});copyTxt([H.join(',')].concat(rows).join('\n'))};
 var CP={};
 window.cpyK=function(k){copyTxt(CP[k])};
 function cstat(c){return c.anulado?'anulado':!c.activado?'sin usar':new Date(c.vence)>new Date()?'activo hasta '+fdt(new Date(c.vence)):'vencido'}
 function cShow(c){
- CP.c=c.codigo;CP.m='Tu código de acceso de Inventario: '+c.codigo+'. Válido '+c.dias+' días desde que lo actives. En la app: ⋮ → Activar código.';
- show('<h3>🔑 Código</h3><div class="m">Toca el código para copiarlo</div><div onclick="cpyK(\'c\')" style="font-size:22px;font-weight:700;text-align:center;padding:12px;margin:8px 0;border:1px dashed var(--b,#888);border-radius:12px;word-break:break-all">'+E(c.codigo)+'</div><div class="m">'+E(c.cliente||'')+' · '+c.dias+' días · '+cstat(c)+'</div><button class="b" onclick="cpyK(\'m\')" style="margin-top:10px">📋 Copiar mensaje para el cliente</button><button class="s" onclick="pnAnu(\''+E(c.codigo)+'\')" style="margin-top:8px">Anular código</button><button class="s" onclick="pnBack()" style="margin-top:8px">Volver al panel</button>')
+ CP.c=c.codigo;CP.cli=c.cliente||'';CP.cod=c.codigo;CP.disp=c.dispositivo||'';
+ CP.m='Tu código de acceso de Inventario: '+c.codigo+'. Válido '+c.dias+' días desde que lo actives. En la app: ⋮ → Activar código.';
+ show(head('c')+'<div class="m">Toca el código para copiarlo</div><div onclick="cpyK(\'c\')" style="font-size:22px;font-weight:700;text-align:center;padding:12px;margin:8px 0;border:1px dashed var(--b,#888);border-radius:12px;word-break:break-all">'+E(c.codigo)+'</div><div class="m">'+E(c.cliente||'')+' · '+c.dias+' días · '+cstat(c)+'</div><button class="b" onclick="cpyK(\'m\')" style="margin-top:10px">Copiar mensaje para el cliente</button>'+(c.activado&&!c.anulado?'<button class="s" onclick="pnExt(\''+E(c.codigo)+'\')" style="margin-top:8px">＋ Extender días</button>':'')+'<button class="s" onclick="pnPagoC()" style="margin-top:8px">💵 Registrar pago</button><button class="s" onclick="pnAnu(\''+E(c.codigo)+'\')" style="margin-top:8px">Anular código</button>')
 }
+window.pnPagoC=function(){pnPago(CP.disp||null,CP.cli,CP.cod)};
 window.pnBack=function(){reload()};
 /* ===== Auditoría de locales (solo con la clave del panel; cada consulta queda registrada) ===== */
 var AUD=null;
 function dtm(t){try{return new Date(t).toLocaleString('es',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
 window.pnAud=async function(){try{var r=await call('panel_locales',{});AUD=r.locales||[];audList()}catch(e){await say('No se pudo cargar los locales: '+String(e&&e.message||e).slice(0,160))}};
 window.audList=function(){var L=AUD||[];
- show(back()+'<h3>🔎 Locales ('+L.length+')</h3><div class="m">Cada vez que abres uno queda anotado en un registro.</div>'
- +L.map(function(x,i){return'<div class="it" onclick="pnLoc('+i+')"><b>'+E(x.nombre||'(sin nombre)')+'</b>'+(x.tiene_dueno?'':' <span class="m">· sin dueño</span>')+'<div class="m">'+x.productos_total+' producto(s) · '+x.registros+' registro(s) · '+Math.round(x.bytes/1024)+' KB'+' · '+x.ver+' sinc.'+(x.dueno_ultima?' · usado '+ago(x.dueno_ultima):'')+(x.dueno_nombre?' · '+E(x.dueno_nombre):'')+(x.dueno_version?' · v'+x.dueno_version:'')+(x.miembros?' · '+x.miembros+' trabajador(es)':'')+(x.pendientes?' ('+x.pendientes+' pendiente)':'')+'</div></div>'}).join('')
- +'<button class="s" onclick="pnLog()" style="margin-top:10px">Ver quién consultó qué</button><button class="s" onclick="pnBack()" style="margin-top:8px">Volver al panel</button>')};
+ show(head('o')+'<div class="m" style="margin-bottom:6px">Cada vez que abres uno queda anotado en un registro.</div>'
+  +L.map(function(x,i){var pp=Math.min(100,x.bytes*100/5e6);return'<div class="pn-row" onclick="pnLoc('+i+')" style="display:block"><div style="display:flex;justify-content:space-between;gap:8px"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+E(x.nombre||'(sin nombre)')+'</b><span class="m" style="white-space:nowrap">'+Math.round(x.bytes/1024)+' KB</span></div><div class="pn-bar" style="margin:6px 0"><span style="width:'+Math.max(pp,1)+'%;background:'+(pp>80?'var(--r)':pp>50?'var(--w)':'var(--g)')+'"></span></div><div class="m">'+x.productos_total+' producto(s) · '+x.registros+' registro(s) · '+x.ver+' sinc.'+(x.dueno_ultima?' · usado hace '+ago(x.dueno_ultima):'')+(x.dueno_nombre?' · '+E(x.dueno_nombre):'')+(x.dueno_version?' · v'+x.dueno_version:'')+(x.miembros?' · '+x.miembros+' trabajador(es)':'')+(x.pendientes?' ('+x.pendientes+' pendiente)':'')+(x.tiene_dueno?'':' · <b>sin dueño</b>')+'</div></div>'}).join('')
+  +(L.length?'':'<div class="pn-c m" style="text-align:center">No hay locales.</div>')+'<button class="s" onclick="pnLog()" style="margin-top:10px">Ver quién consultó qué</button>')};
 window.pnLoc=async function(i){var x=(AUD||[])[i];if(!x)return;try{locView(await call('panel_local',{p_code:x.code}))}catch(e){await say('No se pudo abrir el local: '+String(e&&e.message||e).slice(0,160))}};
 function locView(r){var d=r.data||{},h='<button class="s" onclick="audList()" style="display:inline-block;width:auto;padding:6px 12px;margin-bottom:6px">← Locales</button><h3>'+E(d.n||'Local')+'</h3>';
  h+='<div class="m">'+(r.tiene_dueno?'Con dueño registrado':'<b>Sin dueño registrado</b>: cualquiera con el código entra')+' · versión de datos '+r.ver+'</div>';
