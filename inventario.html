@@ -876,10 +876,10 @@ const ch=await dlg({msg:rs+'Combinar agrega lo que falte (ventas, entradas y fia
 if(!mg&&!await ask('¿Reemplazar todo lo actual por el respaldo? Se perderá lo que no esté en el respaldo (podrás deshacerlo).',{ok:'Reemplazar',danger:1}))return;
 {const sp=JSON.stringify(D);try{localStorage.setItem('inv2p',sp)}catch(x){}try{localStorage.setItem('inv2pf','1')}catch(x){}if(IDBW())idbPut('inv2p',sp).catch(()=>{})}
 if(mg){o.est.forEach(e=>{const c=D.est.findIndex(z=>z.id==e.id);if(c<0)D.est.push(e);else D.est[c]=mergeEst(D.est[c],Object.assign({},e,{dl:[]}))});D.est.forEach(e=>e.pr.sort((a,b)=>b.start.localeCompare(a.start)))}else D=o;
-ce=null;cpid=null;sv();r();cm();
+try{localStorage.removeItem('inv2v')}catch(x){}ce=null;cpid=null;sv();r();cm();
 try{const bd=J.did;if(bd&&window.adoptDid&&/^[0-9a-f]{20}$/.test(bd)&&bd!==DID()&&await ask('Este respaldo es de otro teléfono. ¿Quieres que este teléfono tome su identidad (licencia y dueño de sus locales)? Recomendado si cambiaste de teléfono.',{ok:'Sí, tomar identidad'}))adoptDid(bd)}catch(x){}
 }catch(x){say('Archivo no válido')}};R.readAsText(f)}
-async function undo(){let p=ld('inv2p',null);if(!p&&IDBW()){try{const v=await idbGet('inv2p');if(v)p=JSON.parse(v)}catch(x){}}if(!p||!await ask('¿Volver a los datos que tenías antes de la última restauración?'))return;D=p;ce=null;try{localStorage.removeItem('inv2p');localStorage.removeItem('inv2pf')}catch(x){}if(IDBW())idbDel('inv2p').catch(()=>{});sv();r();cm()}
+async function undo(){let p=ld('inv2p',null);if(!p&&IDBW()){try{const v=await idbGet('inv2p');if(v)p=JSON.parse(v)}catch(x){}}if(!p||!await ask('¿Volver a los datos que tenías antes de la última restauración?'))return;D=p;ce=null;try{localStorage.removeItem('inv2v')}catch(x){}try{localStorage.removeItem('inv2p');localStorage.removeItem('inv2pf')}catch(x){}if(IDBW())idbDel('inv2p').catch(()=>{});sv();r();cm()}
 /* Pide el permiso de cámara al abrir la app (para escanear el QR). Si ya se concedió o se negó, no vuelve a molestar. */
 async function askCam(){
   try{
@@ -915,7 +915,7 @@ acs();
 r();window.__invOk=1;setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script type="text/plain" data-boot>(function(){
-var APP_V=106,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=107,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
