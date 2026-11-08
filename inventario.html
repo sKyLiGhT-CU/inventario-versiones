@@ -170,6 +170,9 @@ const lg=(e,a)=>{if(!e||!wk(e))return;e.lg=e.lg||[];const w=wname(e)||'Trabajado
 const seenOf=e=>((ld('inv2n',{})||{})[e.id])||0,unseen=e=>{if(wk(e))return[];const A=wkAct(e);return(e.lg||[]).filter(x=>x.id>seenOf(e)&&(!A||A.has(x.w)))};
 const wkAct=e=>{try{const a=ld('inv_wkn_'+e.id,null);return Array.isArray(a)?new Set(a.concat(['Trabajador'])):null}catch(x){return null}};
 const wkCache=(e,L,force)=>{try{if(!e||!Array.isArray(L)||(!L.length&&!force))return;s('inv_wkn_'+e.id,JSON.stringify(L.filter(x=>x.estado=='aprobado'||x.estado=='pendiente').map(x=>x.nombre||'')))}catch(x){}};
+const wkLoad=async e=>{let r=null;try{r=await rpc('miembros_lista2',{p_code:e.code,p_id:DID()})}catch(x){r=null}
+if(r&&typeof r=='object'&&!Array.isArray(r)&&Array.isArray(r.lista)){wkCache(e,r.lista,!!r.ok);return r.lista}
+const L=await rpc('miembros_lista',{p_code:e.code,p_id:DID()});wkCache(e,L,false);return L};
 const markSeen=e=>{try{const o=ld('inv2n',{})||{};o[e.id]=Math.max(0,...(e.lg||[]).map(x=>x.id));localStorage.setItem('inv2n',JSON.stringify(o))}catch(x){}};
 function news(){let n=0;D.est.forEach(e=>{if(!wk(e))n+=+(localStorage.getItem('inv_pend_'+e.id)||0)});return n?' · 👷 '+n+' trabajador'+(n>1?'es':'')+' esperando tu aprobación (⋮ del local → Trabajadores)':''}
 let acF='',acO={},acS0=0,acNm=[],acId=[],acOld=false;
@@ -475,7 +478,7 @@ async function fdd(id){const e=gE();if(!e)return;if(wk(e))return say('Solo el du
 const fdCl=e=>{const s=new Map();(e.fd||[]).forEach(x=>{if(!x.c)return;const k=fz(x.c),t=+x.ts||Math.floor((+x.id||0)/100),o=s.get(k);if(!o)s.set(k,{c:x.c,t});else if(t>o.t)o.t=t});return[...s.values()].sort((a,b)=>b.t-a.t).map(o=>o.c)};
 function fdTog(){const bx=G('fdbox'),bt=G('fbtn'),i=G('s3');if(!bx)return;const on=bx.style.display=='none';bx.style.display=on?'block':'none';if(bt){bt.className=on?'b':'s';bt.textContent=on?'💳 Fiado':'💳 Fiar'}if(on){if(i)i.focus()}else if(i)i.value=''}
 function acAct(){const e=gE();if(!e||wk(e))return;acF='';acO={};acOld=false;acS0=seenOf(e);markSeen(e);acR();r();
-if(e.code&&navigator.onLine!==false){const eid=e.id;rpc('miembros_lista',{p_code:e.code,p_id:DID()}).then(L=>{const e2=D.est.find(z=>z.id==eid);if(!e2||!L)return;const a0=JSON.stringify(ld('inv_wkn_'+eid,null));wkCache(e2,L,false);const h=document.querySelector('.sh h3');if(JSON.stringify(ld('inv_wkn_'+eid,null))!==a0&&h&&/Actividad de trabajadores/.test(h.textContent)&&gE()&&gE().id==eid)acR()}).catch(()=>{})}}
+if(e.code&&navigator.onLine!==false){const eid=e.id,a0=JSON.stringify(ld('inv_wkn_'+eid,null));wkLoad(e).then(L=>{const e2=D.est.find(z=>z.id==eid);if(!e2||!L)return;const h=document.querySelector('.sh h3');if(JSON.stringify(ld('inv_wkn_'+eid,null))!==a0&&h&&/Actividad de trabajadores/.test(h.textContent)&&gE()&&gE().id==eid)acR()}).catch(()=>{})}}
 function fdPick(b){const i=G('s3');if(i){i.value=b.getAttribute('data-c')||'';i.focus()}}
 
 function fdNet(a,b,ef){let f=0,c=0;D.est.filter(z=>!wk(z)&&(!ef||z.id==ef)).forEach(e=>(e.fd||[]).forEach(x=>{const dd=x.ts?iso(new Date(x.ts)):'';if(dd>=a&&dd<=b){if(x.m>0)f+=x.m;else c-=x.m}}));f=Math.round(f*100)/100;c=Math.round(c*100)/100;return{f,c,net:Math.round((f-c)*100)/100}}
@@ -920,7 +923,7 @@ acs();
 r();window.__invOk=1;setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script type="text/plain" data-boot>(function(){
-var APP_V=109,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=110,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -1001,11 +1004,11 @@ function wkShow(e,L){
  show('<h3>👷 Trabajadores</h3><div class="m" style="margin-bottom:6px">Solo los teléfonos aprobados entran a este local, aunque tengan el código.</div>'+(rows||'<div class="m" style="padding:14px 0">Aún no hay trabajadores. Cuando alguien escanee tu código, aparecerá aquí para que lo apruebes.</div>')+'<button class="s" onclick="cm()" style="margin-top:12px">Cerrar</button>');
 }
 window.ac=async function(){var e=gE();if(!e||wk(e)||!e.code)return;show('<h3>👷 Trabajadores</h3><div class="m">Cargando…</div>');
- try{var LM=await rpc('miembros_lista',{p_code:e.code,p_id:did()});wkCache(e,LM,false);wkShow(e,LM)}catch(x){show('<h3>👷 Trabajadores</h3><div class="m">No se pudo cargar. ¿Hay internet?</div><button class="s" onclick="cm()">Cerrar</button>')}};
+ try{var LM=await wkLoad(e);wkShow(e,LM)}catch(x){show('<h3>👷 Trabajadores</h3><div class="m">No se pudo cargar. ¿Hay internet?</div><button class="s" onclick="cm()">Cerrar</button>')}};
 window.wkSet=async function(eid,disp,st){var e=D.est.find(function(z){return z.id==eid});if(!e)return;
- try{await rpc('miembro_set',{p_code:e.code,p_id:did(),p_disp:disp,p_estado:st});var LM=await rpc('miembros_lista',{p_code:e.code,p_id:did()});wkCache(e,LM,true);wkShow(e,LM)}catch(x){await say('No se pudo guardar. ¿Hay internet?')}};
+ try{await rpc('miembro_set',{p_code:e.code,p_id:did(),p_disp:disp,p_estado:st});var LM=await wkLoad(e);wkShow(e,LM)}catch(x){await say('No se pudo guardar. ¿Hay internet?')}};
 var regd={};
-function wkSync(){try{var own=[],wkc=[];D.est.forEach(function(e){if(!e.code)return;if(e.rol=='t')wkc.push(e.code);else own.push(e.code)});own.slice(0,20).forEach(function(c){if(regd[c])return;regd[c]=1;rpc('reg_dueno2',{p_code:c,p_id:did()}).then(function(){return rpc('miembros_lista',{p_code:c,p_id:did()})}).then(function(L){var e=D.est.find(function(z){return z.code==c});if(e&&L){s('inv_pend_'+e.id,String(L.filter(function(x){return x.estado=='pendiente'}).length));wkCache(e,L,false)}}).catch(function(){regd[c]=0})});if(wkc.length)rpc('est_estado',{p_codes:wkc.slice(0,20)}).then(function(x){if(x&&x.est){seen(x.hora);s('inv_wkl',JSON.stringify(x.est));try{window.r()}catch(e){}}}).catch(function(){})}catch(e){}}
+function wkSync(){try{var own=[],wkc=[];D.est.forEach(function(e){if(!e.code)return;if(e.rol=='t')wkc.push(e.code);else own.push(e.code)});own.slice(0,20).forEach(function(c){if(regd[c])return;regd[c]=1;rpc('reg_dueno2',{p_code:c,p_id:did()}).then(function(){var e0=D.est.find(function(z){return z.code==c});return e0?wkLoad(e0):rpc('miembros_lista',{p_code:c,p_id:did()})}).then(function(L){var e=D.est.find(function(z){return z.code==c});if(e&&L){s('inv_pend_'+e.id,String(L.filter(function(x){return x.estado=='pendiente'}).length))}}).catch(function(){regd[c]=0})});if(wkc.length)rpc('est_estado',{p_codes:wkc.slice(0,20)}).then(function(x){if(x&&x.est){seen(x.hora);s('inv_wkl',JSON.stringify(x.est));try{window.r()}catch(e){}}}).catch(function(){})}catch(e){}}
 function ping(f){
  if(!navigator.onLine||(!f&&Date.now()-lastPing<6e5))return;lastPing=Date.now();
  try{rpc('ping_dispositivo',{p_id:did(),p_version:AV,p_locales:D.est.length,p_productos:cnt(),p_uso7:uso7()}).then(function(r){
