@@ -169,7 +169,7 @@ const wname=e=>((ld('inv2w',{})||{})[e&&e.id])||'',setWN=(id,n)=>{try{const o=ld
 const lg=(e,a)=>{if(!e||!wk(e))return;e.lg=e.lg||[];const w=wname(e)||'Trabajador',l=e.lg.filter(x=>x.w==w).sort((x,y)=>y.id-x.id)[0];if(l&&l.a==a&&Date.now()-Math.floor(l.id/100)<6e4)return;e.lg.push({id:nid(),w,a})};
 const seenOf=e=>((ld('inv2n',{})||{})[e.id])||0,unseen=e=>{if(wk(e))return[];const A=wkAct(e);return(e.lg||[]).filter(x=>x.id>seenOf(e)&&(!A||A.has(x.w)))};
 const wkAct=e=>{try{const a=ld('inv_wkn_'+e.id,null);return Array.isArray(a)?new Set(a.concat(['Trabajador'])):null}catch(x){return null}};
-const wkCache=(e,L,force)=>{try{if(!e||!Array.isArray(L)||(!L.length&&!force))return;s('inv_wkn_'+e.id,JSON.stringify(L.filter(x=>x.estado=='aprobado'||x.estado=='pendiente').map(x=>x.nombre||'')))}catch(x){}};
+const wkCache=(e,L,force)=>{try{if(!e||!Array.isArray(L)||(!L.length&&!force))return;localStorage.setItem('inv_wkn_'+e.id,JSON.stringify(L.filter(x=>x.estado=='aprobado'||x.estado=='pendiente').map(x=>x.nombre||'')))}catch(x){}};
 const wkLoad=async e=>{let r=null;try{r=await rpc('miembros_lista2',{p_code:e.code,p_id:DID()})}catch(x){r=null}
 if(r&&typeof r=='object'&&!Array.isArray(r)&&Array.isArray(r.lista)){wkCache(e,r.lista,!!r.ok);return r.lista}
 const L=await rpc('miembros_lista',{p_code:e.code,p_id:DID()});wkCache(e,L,false);return L};
@@ -923,7 +923,7 @@ acs();
 r();window.__invOk=1;setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script type="text/plain" data-boot>(function(){
-var APP_V=110,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=111,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
