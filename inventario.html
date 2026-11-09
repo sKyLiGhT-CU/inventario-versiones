@@ -756,7 +756,7 @@ const pdfEnc=s=>{let o='';for(const ch of String(s==null?'':s)){const c=ch.codeP
 const pdfW=(s,sz,b)=>{const T=b?PDF_WB:PDF_W;let w=0;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);w+=c>=32&&c<256?T[c-32]:556}return w*sz/1000};
 function pdfWrap(s,w,sz,b){const L=[];let cur='';const put=t=>{if(pdfW(t,sz,b)<=w)return t;let a='';for(const ch of t){if(pdfW(a+ch,sz,b)>w&&a){L.push(a);a=ch}else a+=ch}return a};
 s.split(' ').forEach(wd=>{const t=cur?cur+' '+wd:wd;if(!cur||pdfW(t,sz,b)<=w)cur=put(t);else{L.push(cur);cur=put(wd)}});L.push(cur);return L}
-function pdfDoc(){const W=PDF_LAND?792:612,H=PDF_LAND?612:792,M=30,BOT=44,pg=[];let o,y;
+function pdfDoc(){const W=PDF_LAND?792:612,H=PDF_LAND?612:792,M=30,BOT=36,pg=[];let o,y;
 const esc=s=>s.replace(/[\\()]/g,'\\$&'),cl=c=>c.map(v=>v.toFixed(3)).join(' '),n2=v=>v.toFixed(2);
 const GR=[.122,.435,.29],LG=[.89,.945,.918],GY=[.93,.93,.93],LN=[.62,.62,.62],RD=[.71,.14,.09],K=[0,0,0],MU=[.4,.4,.4];
 const D={W,H,M,
@@ -766,8 +766,10 @@ bx(x,yy,w,h,f,s){if(f)o.push(`${cl(f)} rg ${n2(x)} ${n2(yy)} ${n2(w)} ${n2(h)} r
 need(h){if(!o||y-h<BOT)D.np()},
 title(t,sz,sub){D.need(sz+34);y-=sz;D.tx(M,y,t,sz,1,K);y-=4;(sub||[]).forEach(s=>{y-=11;D.tx(M,y,s,9,0,MU)});y-=8},
 gap(h){y-=h},
-table(cols,rows,op){op=op||{};const sz=op.sz||8.5,lh=sz+2.2,pad=3,UW=W-2*M,tot=cols.reduce((s,c)=>s+c.w,0),sc=Math.min(UW,op.maxW||UW)/tot,cw=cols.map(c=>c.w*sc),cx=[];let x0=M;cw.forEach(w=>{cx.push(x0);x0+=w});const TW=x0-M;
+table(cols,rows,op){op=op||{};let sz=op.sz||8.5,lh=sz+2.2,pad=3;const UW=W-2*M,tot=cols.reduce((s,c)=>s+c.w,0),sc=Math.min(UW,op.maxW||UW)/tot,cw=cols.map(c=>c.w*sc),cx=[];let x0=M;cw.forEach(w=>{cx.push(x0);x0+=w});const TW=x0-M;
 const hl=cols.map(c=>String(c.h||'').split('\n')),hh=Math.max(...hl.map(l=>l.length))*9.5+6;
+if(op.fit){const P=[[8.5,10.7,3],[8,10,2.5],[7.5,9.2,2],[7,8.6,1.6],[6.5,7.8,1.3],[6,7.2,1.1]],av=y-hh-BOT-2,nd=(s2,l2,p2)=>{let t=0;rows.forEach(r=>{if(r.k=='g'){t+=l2+4;return}const b2=r.k=='t'||r.k=='s';let n=1;cols.forEach((c,i)=>{if(c.a!='r'){const k=pdfWrap(pdfEnc(r.c[i]),cw[i]-6,s2,b2).length;if(k>n)n=k}});t+=n*l2+p2*2-1});return t};
+let pk=null;for(const c of P){if(nd(c[0],c[1],c[2])<=av){pk=c;break}}if(!pk)pk=P[3];sz=pk[0];lh=pk[1];pad=pk[2]}
 const hdr=()=>{y-=hh;D.bx(M,y,TW,hh,GR);cols.forEach((c,i)=>{hl[i].forEach((t,j)=>D.tx(cx[i],y+hh-3-8-j*9.5+0.5,t,7.5,1,[1,1,1],'c',cw[i]))})};
 D.need(hh+40);hdr();
 rows.forEach(r=>{
@@ -800,7 +802,7 @@ const sumRow=(k,t,lab)=>({k,c:[lab,q(t.ini),z(t.ent),z(t.aj),q(t.tot),q(t.fin),q
 R.forEach(r=>{const id=eid(r);if(id!==(S&&S.id)){flush();S={id,ini:0,ent:0,aj:0,tot:0,fin:0,v:0,tr:0,fi:0,imp:0,cos:0,g:0};cur=r.l;if(multi)rows.push({k:'g',c:[r.l]})}
 for(const k in T){T[k]+=r[k];S[k]+=r[k]}
 const pt=ptxt(r.pb);rows.push({c:[r.n,q(r.ini),z(r.ent),z(r.aj),q(r.tot),q(r.fin),q(r.v),z(r.tr),z(r.fi),$(r.np),$(r.imp),$(r.cos),$(r.g)]})});
-flush();rows.push(sumRow('t',T,'TOTAL'));if(!rows.some(r=>r.c.length>8&&r.c[8]!=='')){C.splice(8,1);rows.forEach(r=>{if(r.c.length>8)r.c.splice(8,1)})}d.table(C,rows);
+flush();rows.push(sumRow('t',T,'TOTAL'));if(!rows.some(r=>r.c.length>8&&r.c[8]!=='')){C.splice(8,1);rows.forEach(r=>{if(r.c.length>8)r.c.splice(8,1)})}d.table(C,rows,{fit:true});
 const nw=new Date(),p2=x=>String(x).padStart(2,'0');
 return{n:R.length,bytes:d.done('Inventario · generado '+fd(td())+' '+p2(nw.getHours())+':'+p2(nw.getMinutes()))}}
 
@@ -926,7 +928,7 @@ acs();
 r();window.__invOk=1;setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script type="text/plain" data-boot>(function(){
-var APP_V=112,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=113,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
