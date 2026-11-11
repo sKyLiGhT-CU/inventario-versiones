@@ -128,15 +128,15 @@ if(o.input){const i=G('dgi');i.value=o.def||'';i.onkeydown=ev=>{if(ev.key=='Ente
 function dlgEnd(v){const z=DLC;if(!z)return;DLC=null;z.res(v);dlgNext()}
 const say=m=>dlg({msg:m,ok:'Entendido'});
 const ask=async(m,o)=>{const ok=await dlg({msg:m,ok:(o&&o.ok)||'Aceptar',cancel:'Cancelar',danger:!!(o&&o.danger)});if(ok&&o&&o.ok=='Eliminar')unArm();return ok};
-/* ===== v99: deshacer el último borrado (60 s; se anula si haces otro cambio o se sincroniza) ===== */
-var UDO=null;const UWIN=60000;
-function unArm(){const e=gE();unClear();if(!e)return;try{UDO={id:e.id,s:JSON.stringify(e),t:Date.now(),shown:0}}catch(x){UDO=null}}
+/* ===== v99: deshacer los últimos borrados (5 s; se anula si haces otro cambio o se sincroniza) ===== */
+var UDO=null,UST=[];const UWIN=5000;
+function unArm(){const e=gE();if(!e){unClear();return}const keep=UDO&&UDO.id==e.id&&UDO.shown?UST.slice(-4):[];if(UDO&&UDO.tm)clearTimeout(UDO.tm);try{UST=keep.concat([{id:e.id,s:JSON.stringify(e)}]);UDO={id:e.id,t:Date.now(),shown:0}}catch(x){UST=[];UDO=null}}
 function unHide(){const b=document.getElementById('unb');if(b)b.remove()}
-function unClear(){if(UDO&&UDO.tm)clearTimeout(UDO.tm);UDO=null;unHide()}
-function unShow(){unHide();const b=document.createElement('div');b.id='unb';b.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:99;background:#0f172a;color:#fff;padding:10px 12px;border-radius:12px;font-size:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 6px 20px rgba(0,0,0,.35)';b.innerHTML='<span>Eliminado</span><button style="background:#fff;color:#0f172a;border:0;border-radius:8px;padding:8px 12px;font-weight:700">↩ Deshacer</button>';b.querySelector('button').onclick=unDo;document.body.appendChild(b);UDO.tm=setTimeout(unClear,UWIN)}
+function unClear(){if(UDO&&UDO.tm)clearTimeout(UDO.tm);UDO=null;UST=[];unHide()}
+function unShow(){unHide();const b=document.createElement('div');b.id='unb';b.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:99;background:#0f172a;color:#fff;padding:10px 12px;border-radius:12px;font-size:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 6px 20px rgba(0,0,0,.35)';b.innerHTML='<span>Eliminado'+(UST.length>1?' ('+UST.length+')':'')+'</span><button style="background:#fff;color:#0f172a;border:0;border-radius:8px;padding:8px 12px;font-weight:700">↩ Deshacer</button>';b.querySelector('button').onclick=unDo;document.body.appendChild(b);UDO.tm=setTimeout(unClear,UWIN)}
 function unTick(){if(!UDO)return;if(!UDO.shown){if(Date.now()-UDO.t>4000){UDO=null;return}UDO.shown=1;unShow();return}unClear();autoSync()}
 function unHold(){return !!UDO&&(UDO.shown||Date.now()-UDO.t<=4000)}
-function unDo(){if(!UDO||!UDO.shown)return;const i=D.est.findIndex(z=>z.id==UDO.id);let o=null;try{o=JSON.parse(UDO.s)}catch(x){}if(i<0||!o){unClear();return}D.est[i]=o;unClear();sv();r();toast('Restaurado',3000)}
+function unDo(){if(!UDO||!UDO.shown||!UST.length)return;const u=UST.pop(),rest=UST.slice(),i=D.est.findIndex(z=>z.id==u.id);let o=null;try{o=JSON.parse(u.s)}catch(x){}if(i<0||!o){unClear();return}if(UDO.tm)clearTimeout(UDO.tm);UDO=null;D.est[i]=o;sv();r();UST=rest;if(rest.length){UDO={id:u.id,t:Date.now(),shown:1};unShow()}else{UST=[];unHide()}toast('Restaurado',3000)}
 function syncChip(e){if(!e||!e.code)return '';const t=(ld('inv2s',{})||{})[e.code],a=t?Date.now()-t:Infinity;if(a<3*36e5)return '';const h=Math.floor(a/36e5),tx=!t?'sin sincronizar':h<24?'hace '+h+' h':'hace '+Math.floor(h/24)+' d';return '<span class="tag '+(a>=24*36e5?'no':'w')+'" onclick="syncOne(\''+e.id+'\')">🔄 '+tx+'</span>'}
 /* ===== v101: descargar el APK más nuevo para que la app integrada (la de respaldo) quede al día ===== */
 const APKU='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/apk/inventario.apk',APKV='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/version.json';
@@ -608,7 +608,7 @@ show(`<h3>📊 Resumen general</h3><div class="chips">${[['d','Día'],['w','Sema
 ${R.m=='r'?`<div class="g2r"><input id="r1" type="date" value="${R.a}" onchange="rgr()"><input id="r2" type="date" value="${R.b}" onchange="rgr()"></div>`:`<div class="nav"><button class="x" aria-label="Anterior" onclick="rgn(-1)">‹</button><b>${lbl}</b><button class="x" aria-label="Siguiente" onclick="rgn(1)">›</button></div>`}
 <div class="g2r"><select id="ref" onchange="RG.ef=this.value;rg()"><option value="">Todos los locales</option>${D.est.filter(e=>!wk(e)).map(e=>`<option value="${E(e.id)}"${e.id==ef?' selected':''}>${E(e.n)}</option>`).join('')}</select>
 <select id="rpf" onchange="RG.pf=this.value;rg()"><option value="">Todos los productos</option>${(pf&&!A.names.some(z=>z.toLowerCase()==pf)?A.names.concat([pfn]):A.names).map(z=>`<option value="${E(z.toLowerCase())}"${z.toLowerCase()==pf?' selected':''}>${E(z)}</option>`).join('')}</select></div>
-<div class="hero"><div class="m">Ganancia${pf?' · '+E(pfn):''}</div><div class="big ${A.g<0?'n':'g'}">${$(A.g)}</div><div class="m">Margen ${mg.toFixed(1)}%${pf?' · Vendidas '+un(A.u)+' u':''}</div>${(A.gs||A.pd)?`<div class="m" style="margin-top:4px">Gastos <b>−${$(A.gs)}</b> · Pérdidas <b>−${$(A.pd)}</b></div><div class="m">Ganancia neta <b class="${A.g-A.gs-A.pd<0?'no':'ok'}">${$(A.g-A.gs-A.pd)}</b></div>`:''}<div class="row" style="margin-top:12px"><div><div class="m">Inversión</div><b>${$(A.c)}</b></div><div style="text-align:right"><div class="m">Venta</div><b>${$(A.v)}</b></div></div>${spl(A.v,A.c)}</div>
+<div class="hero"><div class="m">Ganancia${pf?' · '+E(pfn):''}</div><div class="big ${A.g<0?'n':'g'}">${$(A.g)}</div><div class="m">Margen ${mg.toFixed(1)}%${pf?' · Vendidas '+un(A.u)+' u':''}</div>${(A.gs||A.pd)?`<div class="m" style="margin-top:4px">Gastos <b>−${$(A.gs)}</b>${A.pd?' · Pérdidas '+$(A.pd)+' (ya restadas en la ganancia)':''}</div><div class="m">Ganancia neta <b class="${A.g-A.gs<0?'no':'ok'}">${$(A.g-A.gs)}</b></div>`:''}<div class="row" style="margin-top:12px"><div><div class="m">Inversión</div><b>${$(A.c)}</b></div><div style="text-align:right"><div class="m">Venta</div><b>${$(A.v)}</b></div></div>${spl(A.v,A.c)}</div>
 ${A.L.length?`<div class="sec">Por establecimiento</div>`+A.L.map(x=>`<div class="it"><div class="row"><b>🏪 ${E(x.n)}</b><b class="${x.g<0?'no':'ok'}">${$(x.g)}</b></div>${spl(x.v,x.c)}<div class="m">${pf?'Vendidas '+un(x.u)+' u · ':''}Venta ${$(x.v)} · Inversión ${$(x.c)}</div></div>`).join(''):'<div class="empty" style="padding:22px">'+(pf?'Sin ventas de este producto en este período.':'Sin ventas en este período.')+'</div>'}
 ${A.top.length&&!pf?`<div class="sec">Productos estrella</div>`+A.top.slice(0,3).map((x,i)=>`<div class="row it"><span>${['🥇','🥈','🥉'][i]} ${E(x.n)} <span class="m">· ${E(x.e)}</span></span><b class="${x.g<0?'no':'ok'}">${$(x.g)}</b></div>`).join(''):''}
 ${A.st>0?`<div class="row it"><span>📦 Mercancía que te queda (al costo)</span><b>${$(A.st)}</b></div>`:''}${(!pf&&fdPend(ef)>0)?`<div class="row it"><span>💳 Por cobrar (fiado)</span><b>${$(fdPend(ef))}</b></div>`:''}
@@ -960,7 +960,7 @@ acs();
 r();window.__invOk=1;setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script type="text/plain" data-boot>(function(){
-var APP_V=119,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=121,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
