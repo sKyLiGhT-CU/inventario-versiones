@@ -628,13 +628,14 @@ function procJoin(){
   const c=m[0];
   if(D.est.some(z=>z.code==c))return toast('Ya tienes este local en tu teléfono.');
   toast('Buscando el local…',20000);
-  withT(rpc('get_est2',{p_code:c,p_id:DID(),p_nombre:nm}),15000).then(rows=>{
+  withT(rpc('get_est2',{p_code:c,p_id:DID(),p_nombre:nm}),15000).then(async rows=>{
     if(rows&&!Array.isArray(rows)&&rows.estado)return toast(rows.estado=='pendiente'?'📨 Pedido enviado. Cuando el dueño te apruebe, vuelve a escanear el código.':'⛔ El dueño no permitió este teléfono.',9000);
     const remote=Array.isArray(rows)&&rows.length?rows[0].data:null;
     if(!remote)return toast('No se encontró ese código. El dueño debe sincronizar su local primero.',8000);
     if(D.est.some(z=>z.id==remote.id))return toast('Ya tienes este local en tu teléfono.');
-    norm(remote);stamp(remote,true);remote.rol='t';remote.code=c;setWN(remote.id,nm);lg(remote,'Se unió como trabajador');
-    D.est.push(remote);sv();stopQR();cm();r();toast('✅ Te uniste a "'+remote.n+'"',5000);
+    let own=false;try{const L=await rpc('miembros_lista2',{p_code:c,p_id:DID()});own=!!(L&&L.ok)}catch(e){}
+    norm(remote);stamp(remote,true);remote.code=c;if(own)remote.rol='d';else{remote.rol='t';scrubCostos(remote);setWN(remote.id,nm);lg(remote,'Se unió como trabajador')}
+    D.est.push(remote);sv();stopQR();cm();r();toast(own?'✅ Recuperaste "'+remote.n+'" como dueño':'✅ Te uniste a "'+remote.n+'"',5000);
   }).catch(err=>toast('❌ '+hint(err),9000));
 }
 function me(){const e=gE(),o=opn(e),w=wk(e),nu=w?0:unseen(e).length;if(!w&&e.code)setTimeout(()=>showQR(e.code),0);
@@ -962,7 +963,7 @@ acs();
 r();window.__invOk=1;setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script type="text/plain" data-boot>(function(){
-var APP_V=125,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=126,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -1282,7 +1283,12 @@ function locView(r){var d=r.data||{},h='<button class="s" onclick="audList()" st
  if(sales.length)h+='<div class="m" style="margin:12px 0 4px"><b>Últimas ventas</b></div>'+sales.slice(0,15).map(function(v){return'<div class="m">'+dtm(v.t)+' · '+E(v.n||'?')+' · '+un(v.q)+' u · '+E(v.w||'?')+'</div>'}).join('');
  var fd=d.fd||[];if(fd.length){var by={};fd.forEach(function(y){var k=String(y.c||'?');by[k]=(by[k]||0)+(+y.m||0)});h+='<div class="m" style="margin:12px 0 4px"><b>Fiado</b></div>'+Object.keys(by).filter(function(k){return Math.abs(by[k])>0.005}).map(function(k){return'<div class="m">'+E(k)+': '+$(by[k])+'</div>'}).join('')}
  var mb=r.miembros||[];if(mb.length)h+='<div class="m" style="margin:12px 0 4px"><b>Trabajadores</b></div>'+mb.map(function(x){return'<div class="m">'+E(x.nombre||'?')+' · '+E(x.estado)+(x.ultima?' · '+dtm(x.ultima):'')+'</div>'}).join('');
- show(h+'<button class="s" onclick="audList()" style="margin-top:12px">Volver a la lista</button><button class="s" onclick="pnDel(\''+Q(r.code)+'\')" style="margin-top:8px;color:#b42318;border-color:#b42318">Eliminar este local</button>')}
+ show(h+'<button class="s" onclick="audList()" style="margin-top:12px">Volver a la lista</button><button class="s" onclick="pnDueno(\''+Q(r.code)+'\')" style="margin-top:8px">Cambiar dueño</button><button class="s" onclick="pnDel(\''+Q(r.code)+'\')" style="margin-top:8px;color:#b42318;border-color:#b42318">Eliminar este local</button>')}
+window.pnDueno=async function(code){try{LAST=await call('panel_dispositivos',{})}catch(e){}var i=(AUD||[]).findIndex(function(z){return z.code==code}),x=(AUD||[])[i]||{},L=((LAST&&LAST.lista)||[]).slice().sort(function(a,b){return new Date(b.ultima)-new Date(a.ultima)}).slice(0,30);
+ show('<button class="s" onclick="pnLoc('+i+')" style="display:inline-block;width:auto;padding:6px 12px;margin-bottom:6px">← Local</button><h3>Cambiar dueño</h3><div class="m">Local: <b>'+E(x.nombre||'(sin nombre)')+'</b>'+(x.dueno_nombre?' · dueño actual: '+E(x.dueno_nombre):'')+'</div><div class="m" style="margin:8px 0">Elige el teléfono que será el nuevo dueño. Los más recientes primero.</div>'+(L.map(function(d){return'<div class="pn-row" onclick="pnDuenoOk(\''+Q(code)+'\',\''+Q(d.id)+'\')" style="display:block"><b>'+E(d.nombre||fid(d.id))+'</b><div class="m">'+(d.ultima?'activo hace '+ago(d.ultima)+' · ':'')+'v'+E(d.version||'?')+' · '+E(d.locales||0)+' local(es) · '+fid(d.id)+'</div></div>'}).join('')||'<div class="m">No hay teléfonos registrados.</div>'))};
+window.pnDuenoOk=async function(code,id){var x=(AUD||[]).filter(function(z){return z.code==code})[0]||{},d=((LAST&&LAST.lista)||[]).filter(function(z){return z.id==id})[0]||{};
+ if(!(await ask('¿Pasar "'+(x.nombre||'sin nombre')+'" a '+(d.nombre||fid(id))+'?\n\nEse teléfono será el dueño: verá los costos y podrá aprobar trabajadores. El dueño actual dejará de serlo. Queda anotado en el registro de accesos.',{ok:'Sí, cambiar dueño',danger:true})))return;
+ try{await call('panel_cambiar_dueno',{p_code:code,p_id:id});await say('Listo. Ese teléfono ya es el dueño. Para que le aparezca el local, que entre en la app y use "Unirme con código" con el código del local.');pnAud()}catch(e){await say('No se pudo cambiar: '+String(e&&e.message||e).slice(0,160))}};
 window.pnDel=async function(code){var x=(AUD||[]).filter(function(z){return z.code==code})[0]||{};
  var t=await dlg({msg:(x.ver>30?'⚠️ Este local parece estar en uso ('+x.ver+' sincronizaciones).\n\n':'')+'Eliminar "'+(x.nombre||'sin nombre')+'" de la base de datos.\n\n'+(x.productos_total||0)+' producto(s), '+(x.miembros||0)+' trabajador(es).\nSe guarda una copia por si te equivocas, pero quien lo use perderá el acceso.\n\nEscribe ELIMINAR para confirmar.',input:true,def:'',ok:'Eliminar',cancel:'Cancelar',danger:true});
  if(String(t||'').trim().toUpperCase()!=='ELIMINAR'){if(t!==null&&t!==false&&t!==undefined)await say('No se eliminó: debías escribir ELIMINAR.');return}
