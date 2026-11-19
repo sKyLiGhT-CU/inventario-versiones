@@ -1136,7 +1136,7 @@ acs();
 r();window.__invOk=1;setTimeout(askCam,1200);setTimeout(autoRespaldo,9000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(autoRespaldo,4000)});
 </script>
 <script type="text/plain" data-boot>(function(){
-var APP_V=161,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
+var APP_V=162,K='inv_upd_',U='https://raw.githubusercontent.com/sKyLiGhT-CU/inventario-versiones/main/';
 var g=function(k){try{return localStorage.getItem(K+k)}catch(e){return null}};
 var d=function(k){try{localStorage.removeItem(K+k)}catch(e){}};
 var s=function(k,v){try{localStorage.setItem(K+k,v);return true}catch(e){return false}};
@@ -1507,7 +1507,7 @@ const S=[
 ];
 window.tut=function(i){i=i||0;const n=S.length;if(i>=n){try{localStorage.setItem('inv2tut','1')}catch(e){}cm();return}
 const s=S[i];show('<h3>'+s[0]+'</h3>'+s[2]+'<div class="m" style="margin:8px 0">'+s[1]+'</div><div class="tg">'+S.map((_,k)=>'<i class="'+(k==i?'on':'')+'"></i>').join('')+'</div><div class="tk">'+(i?'<button class="s" onclick="tut('+(i-1)+')">Atrás</button>':'<button class="s" onclick="tut('+n+')">Saltar</button>')+'<button class="b" onclick="tut('+(i+1)+')">'+(i==n-1?'Listo':'Siguiente')+'</button></div>')};
-try{if(!localStorage.getItem('inv2tut'))setTimeout(()=>{try{if(!G('md').innerHTML&&!DLC)tut(0)}catch(e){}},900)}catch(e){}
+try{if(!localStorage.getItem('inv2tut'))setTimeout(()=>{try{if(!G('md').innerHTML&&!DLC)gsWelcome()}catch(e){}},900)}catch(e){}
 })();
 </script><script type="text/plain" data-boot>(function(){
 /* Íconos: los emojis del texto se cambian por íconos propios (mismo aspecto en todos los teléfonos) */
@@ -1521,6 +1521,26 @@ L.forEach(fix)}
 function run(nodes){if(busy)return;busy=true;try{nodes.forEach(function(n){if(n.nodeType==3){var p=n.parentNode;if(p&&!(p.closest&&p.closest('svg'))&&!/^(SCRIPT|STYLE|TEXTAREA|OPTION)$/.test(p.nodeName))fix(n)}else if(n.nodeType==1)walk(n)})}catch(e){}busy=false}
 new MutationObserver(function(ms){var a=[];ms.forEach(function(m){for(var i=0;i<m.addedNodes.length;i++)a.push(m.addedNodes[i])});if(a.length)run(a)}).observe(document.body,{childList:true,subtree:true});
 run([document.body])})();
+</script>
+<script type="text/plain" data-boot>
+/* v162: guía de primer uso (solo instalaciones nuevas): crear local, agregar producto, anotar venta */
+(function(){
+var GSK='inv2gs',GSD='inv2gd';
+function gG(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function gS(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function on(){return gG(GSK)==='1'&&!gG(GSD)&&!D.est.some(function(e){return isW(e)})}
+function step(){var L=D.est.filter(function(e){return !isW(e)});if(!L.length)return 1;var o=opn(L[0]);if(!o||!o.ps.length)return 2;if(!L.some(function(z){return (z.pr||[]).some(function(p){return hasSales(p)})}))return 3;return 4}
+window.gsWelcome=async function(){gS('inv2tut','1');var v=await dlg({msg:'¡Bienvenido a Inventario! Te guío en 3 pasos para empezar: crear tu local, agregar un producto y anotar tu primera venta. Dura menos de 2 minutos.',ok:'Empezar',alt:'Ver tutorial',cancel:'Saltar'});if(v===true){gS(GSK,'1');gsBar()}else if(v==='alt')tut(0);else gS(GSD,'1')};
+window.gsSkip=function(){gS(GSD,'1');var b=document.getElementById('gsb');if(b)b.remove()};
+window.gsGo=function(){var s=step(),L=D.est.filter(function(e){return !isW(e)});if(s==1)return ne();var e=L[0];go(e.id);if(s==2)return np();var o=opn(e),p=o&&o.ps.find(function(x){return !x.fis&&!x.ing&&!x.rc&&x.md=='v'&&calc(x).tot-sumV(x)>0});if(!p)return say('Tus productos no tienen existencia. Abre uno y toca «+ Entrada».');fs(p.id)};
+window.gsBar=function(){try{var o=document.getElementById('gsb');if(o)o.remove();if(!on())return;var s=step();
+if(s==4){gS(GSD,'1');setTimeout(function(){dlg({msg:'¡Listo, ya sabes lo básico!\n\n📋 «Contar existencia» comprueba si tu stock cuadra.\n📊 «Resumen general», arriba en el inicio, muestra tus ganancias.\n⋮ guarda respaldos, trae trabajadores y más.\n\nEl tutorial completo está en ⋮ → Cómo usar la app.',ok:'Entendido'})},700);return}
+var T=[null,['Crea tu primer local','Un local es tu negocio: bar, kiosco, tienda…','Crear local'],['Agrega tu primer producto','Pon el nombre, cuántos tienes, lo que te costó y a cuánto lo vendes.','Agregar producto'],['Anota tu primera venta','Elige un producto y escribe cuántas unidades vendiste.','Anotar venta']][s];
+var h='<div id="gsb" class="card a-w" style="margin:10px 12px"><div class="m"><b>🚀 Paso '+s+' de 3</b></div><div style="font-weight:800;font-size:17px;margin:2px 0">'+T[0]+'</div><div class="m">'+T[1]+'</div><button class="b" onclick="gsGo()">'+T[2]+'</button><button class="s" onclick="gsSkip()">Saltar la guía</button></div>',hd=document.querySelector('#v header');
+if(hd)hd.insertAdjacentHTML('afterend',h);else document.getElementById('v').insertAdjacentHTML('afterbegin',h)}catch(e){}};
+var _r2=window.r;window.r=function(){var x=_r2.apply(this,arguments);gsBar();return x};
+setTimeout(gsBar,400);
+})();
 </script>
 <script>(function(){
 /* v104: abre IndexedDB antes de arrancar la app (guarda todo el historial sin el tope de 5 MB) */
